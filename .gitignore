@@ -1,0 +1,35 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Dependencies and build output
+node_modules
+dist
+dist-ssr
+coverage
+*.local
+
+# Playwright generated artifacts
+playwright-report
+test-results
+blob-report
+playwright/.cache
+
+# Supabase CLI local artifacts
+supabase/.temp
+supabase/.branches
+
+# Environment files (real values must never be committed)
+.env
+.env.*
+!.env.example
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.sw?
