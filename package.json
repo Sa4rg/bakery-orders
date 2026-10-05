@@ -19,7 +19,8 @@
     "supabase:status": "supabase status",
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
-    "db:lint": "supabase db lint --fail-on error"
+    "db:lint": "supabase db lint --fail-on error",
+    "db:types": "supabase gen types typescript --local --schema public > src/lib/supabase/database.types.ts && node -e \"const fs=require('node:fs');const p='src/lib/supabase/database.types.ts';const s=fs.readFileSync(p,'utf8').split(/\\r?\\n/).map(line=>line.trimEnd()).join('\\n');fs.writeFileSync(p,s)\""
   },
   "dependencies": {
     "react": "^19.3.0",
