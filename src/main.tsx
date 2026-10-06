@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './app/App'
+import { createAppBootstrap } from './app/bootstrap'
 
 const rootElement = document.getElementById('root')
 
@@ -10,6 +11,6 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <App bootstrap={createAppBootstrap(import.meta.env)} />
   </StrictMode>,
 )

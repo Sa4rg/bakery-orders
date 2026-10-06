@@ -118,6 +118,12 @@ Use append-oriented OrderEvent audit history
 
 ACCEPTED
 
+ADR-013
+
+Use controlled email/password authentication with no public signup
+
+ACCEPTED
+
 4. ADR-001 — Backend Platform
 
 Decision: Supabase provides the backend platform.
@@ -327,10 +333,6 @@ OrderEvent provides operational history and auditability.
 16. Decisions Still Requiring ADRs
 
 Potential future decisions include:
-
-Authentication method for external businesses.
-
-Customer onboarding workflow.
 
 Frontend server-state library, if one is required.
 
