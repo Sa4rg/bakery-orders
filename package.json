@@ -23,8 +23,12 @@
     "db:types": "supabase gen types typescript --local --schema public > src/lib/supabase/database.types.ts && node -e \"const fs=require('node:fs');const p='src/lib/supabase/database.types.ts';const s=fs.readFileSync(p,'utf8').split(/\\r?\\n/).map(line=>line.trimEnd()).join('\\n');fs.writeFileSync(p,s)\""
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
+    "@supabase/supabase-js": "^2.117.2",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "react-hook-form": "^7.89.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
