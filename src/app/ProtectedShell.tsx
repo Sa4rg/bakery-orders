@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import type { CatalogGateway } from '../features/catalog/application/catalogGateway'
 import { CustomerCatalog } from '../features/catalog/components/CustomerCatalog'
+import type { ManagerCatalogGateway } from '../features/catalog/application/managerCatalogGateway'
+import { ManagerCatalogAdministration } from '../features/catalog/components/ManagerCatalog'
+import type { AppRole } from '../features/auth/domain/access'
 
 interface ProtectedShellProps {
   displayName: string
-  role: string
+  role: AppRole
   catalogGateway: CatalogGateway
+  managerCatalogGateway: ManagerCatalogGateway
   onSignOut(): Promise<boolean>
 }
 
@@ -14,6 +18,7 @@ export function ProtectedShell({
   displayName,
   role,
   catalogGateway,
+  managerCatalogGateway,
   onSignOut,
 }: ProtectedShellProps) {
   const [signOutFailed, setSignOutFailed] = useState(false)
@@ -37,6 +42,7 @@ export function ProtectedShell({
         <dd>{role}</dd>
       </dl>
       {role === 'CUSTOMER' && <CustomerCatalog gateway={catalogGateway} />}
+      {role === 'MANAGER' && <ManagerCatalogAdministration gateway={managerCatalogGateway} />}
       <button type="button" onClick={() => void handleSignOut()}>
         Sign out
       </button>

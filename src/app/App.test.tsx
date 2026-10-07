@@ -158,6 +158,11 @@ describe('App', () => {
 
       expect(await screen.findByText('Application foundation ready.')).toBeVisible()
       expect(screen.queryByRole('heading', { name: 'Catalog' })).toBeNull()
+      if (role === 'MANAGER') {
+        expect(await screen.findByRole('heading', { name: 'Catalog administration' })).toBeVisible()
+      } else {
+        expect(screen.queryByRole('heading', { name: 'Catalog administration' })).toBeNull()
+      }
       expect(screen.getByRole('button', { name: 'Sign out' })).toBeVisible()
     },
   )
