@@ -5,9 +5,15 @@ import {
 } from '../lib/supabase/config'
 import type { AuthGateway } from '../features/auth/application/authGateway'
 import { createSupabaseAuthGateway } from '../features/auth/data/createSupabaseAuthGateway'
+import type { CatalogGateway } from '../features/catalog/application/catalogGateway'
+import { createSupabaseCatalogGateway } from '../features/catalog/data/createSupabaseCatalogGateway'
 
 export type AppBootstrap =
-  | { status: 'ready'; authGateway: AuthGateway }
+  | {
+      status: 'ready'
+      authGateway: AuthGateway
+      catalogGateway: CatalogGateway
+    }
   | { status: 'misconfigured'; variables: SupabaseConfigVariable[] }
 
 /**
@@ -23,5 +29,9 @@ export function createAppBootstrap(env: Record<string, unknown>): AppBootstrap {
 
   const client = createSupabaseBrowserClient(config)
 
-  return { status: 'ready', authGateway: createSupabaseAuthGateway(client) }
+  return {
+    status: 'ready',
+    authGateway: createSupabaseAuthGateway(client),
+    catalogGateway: createSupabaseCatalogGateway(client),
+  }
 }
