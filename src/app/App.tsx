@@ -31,6 +31,7 @@ export default function App({ bootstrap }: AppProps) {
               <ProtectedShell
                 displayName={profile.displayName}
                 role={profile.role}
+                catalogGateway={bootstrap.catalogGateway}
                 onSignOut={signOut}
               />
             )}

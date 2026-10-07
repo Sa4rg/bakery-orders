@@ -21,7 +21,7 @@ describe('createAppBootstrap', () => {
     })
   })
 
-  it('creates an auth gateway when the configuration is valid', () => {
+  it('creates feature gateways from the valid browser configuration', () => {
     const bootstrap = createAppBootstrap({
       VITE_SUPABASE_URL: 'http://127.0.0.1:54321',
       VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test_value',
@@ -31,6 +31,7 @@ describe('createAppBootstrap', () => {
     if (bootstrap.status === 'ready') {
       expect(typeof bootstrap.authGateway.signInWithPassword).toBe('function')
       expect(typeof bootstrap.authGateway.signOutLocal).toBe('function')
+      expect(typeof bootstrap.catalogGateway.loadCatalog).toBe('function')
     }
   })
 })

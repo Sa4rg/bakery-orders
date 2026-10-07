@@ -7,15 +7,29 @@ import {
   createFakeAuthGateway,
   customerUserId,
 } from '../features/auth/testing/fakeAuthGateway'
+import type { CustomerCatalog } from '../features/catalog/application/catalogGateway'
+import { createFakeCatalogGateway } from '../features/catalog/testing/fakeCatalogGateway'
 import App from './App'
+
+const emptyCatalog: CustomerCatalog = { categories: [], products: [] }
+
+function renderReadyApp(authGateway = createFakeAuthGateway()) {
+  const catalogFake = createFakeCatalogGateway([emptyCatalog])
+
+  return render(
+    <App
+      bootstrap={{
+        status: 'ready',
+        authGateway,
+        catalogGateway: catalogFake.gateway,
+      }}
+    />,
+  )
+}
 
 describe('App', () => {
   it('renders the application heading', () => {
-    render(
-      <App
-        bootstrap={{ status: 'ready', authGateway: createFakeAuthGateway() }}
-      />,
-    )
+    renderReadyApp()
 
     expect(
       screen.getByRole('heading', { level: 1, name: 'Bakery Orders' }),
@@ -45,7 +59,7 @@ describe('App', () => {
 
   it('shows the login form when signed out', async () => {
     const gateway = createFakeAuthGateway()
-    render(<App bootstrap={{ status: 'ready', authGateway: gateway }} />)
+    renderReadyApp(gateway)
 
     act(() => gateway.emit(null))
 
@@ -56,7 +70,7 @@ describe('App', () => {
     const gateway = createFakeAuthGateway({
       profile: buildProfile({ displayName: 'Mia Manager', role: 'MANAGER' }),
     })
-    render(<App bootstrap={{ status: 'ready', authGateway: gateway }} />)
+    renderReadyApp(gateway)
 
     act(() => gateway.emit({ userId: customerUserId }))
 
@@ -71,9 +85,7 @@ describe('App', () => {
       profile: buildProfile({ role: 'CUSTOMER' }),
       memberships: [buildMembership()],
     })
-    const { container } = render(
-      <App bootstrap={{ status: 'ready', authGateway: gateway }} />,
-    )
+    const { container } = renderReadyApp(gateway)
 
     act(() => gateway.emit({ userId: customerUserId }))
     await screen.findByText('Application foundation ready.')
@@ -86,7 +98,7 @@ describe('App', () => {
     const gateway = createFakeAuthGateway({
       profile: buildProfile({ role: 'KITCHEN' }),
     })
-    render(<App bootstrap={{ status: 'ready', authGateway: gateway }} />)
+    renderReadyApp(gateway)
 
     act(() => gateway.emit({ userId: customerUserId }))
     await user.click(await screen.findByRole('button', { name: 'Sign out' }))
@@ -101,7 +113,7 @@ describe('App', () => {
       profile: buildProfile({ role: 'KITCHEN' }),
       signOutSucceeds: false,
     })
-    render(<App bootstrap={{ status: 'ready', authGateway: gateway }} />)
+    renderReadyApp(gateway)
 
     act(() => gateway.emit({ userId: customerUserId }))
     await user.click(await screen.findByRole('button', { name: 'Sign out' }))
@@ -111,4 +123,33 @@ describe('App', () => {
     )
     expect(screen.getByText('Application foundation ready.')).toBeVisible()
   })
+
+  it('shows the catalog to CUSTOMER while preserving the protected session controls', async () => {
+    const gateway = createFakeAuthGateway({
+      profile: buildProfile({ role: 'CUSTOMER' }),
+      memberships: [buildMembership()],
+    })
+    renderReadyApp(gateway)
+
+    act(() => gateway.emit({ userId: customerUserId }))
+
+    expect(await screen.findByRole('heading', { name: 'Catalog' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeVisible()
+  })
+
+  it.each(['KITCHEN', 'MANAGER'] as const)(
+    'does not show the customer catalog to %s',
+    async (role) => {
+      const gateway = createFakeAuthGateway({
+        profile: buildProfile({ role }),
+      })
+      renderReadyApp(gateway)
+
+      act(() => gateway.emit({ userId: customerUserId }))
+
+      expect(await screen.findByText('Application foundation ready.')).toBeVisible()
+      expect(screen.queryByRole('heading', { name: 'Catalog' })).toBeNull()
+      expect(screen.getByRole('button', { name: 'Sign out' })).toBeVisible()
+    },
+  )
 })
