@@ -58,10 +58,10 @@ select throws_ok(
   'categories rejects a negative display_order'
 );
 
-insert into public.categories (name) values ('Bread');
+insert into public.categories (name) values ('Category Uniqueness Fixture');
 
 select throws_ok(
-  $$insert into public.categories (name) values ('bread')$$,
+  $$insert into public.categories (name) values ('category uniqueness fixture')$$,
   '23505', null,
   'category names are unique case-insensitively'
 );

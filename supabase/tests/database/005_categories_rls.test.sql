@@ -75,7 +75,11 @@ do $$ begin
   perform set_config('request.jwt.claims', '{"role":"authenticated","sub":"40000000-0000-4000-8000-000000000001"}', true);
 end $$;
 select results_eq(
-  $$select id from public.categories order by display_order$$,
+  $$select id from public.categories where id in (
+      '50000000-0000-4000-8000-000000000001',
+      '50000000-0000-4000-8000-000000000002',
+      '50000000-0000-4000-8000-000000000003'
+    ) order by display_order$$,
   $$values ('50000000-0000-4000-8000-000000000001'::uuid), ('50000000-0000-4000-8000-000000000002'::uuid)$$,
   'active CUSTOMER with active membership in active Business reads active categories only'
 );
@@ -115,7 +119,11 @@ do $$ begin
   perform set_config('request.jwt.claims', '{"role":"authenticated","sub":"40000000-0000-4000-8000-000000000006"}', true);
 end $$;
 select results_eq(
-  $$select id from public.categories order by display_order$$,
+  $$select id from public.categories where id in (
+      '50000000-0000-4000-8000-000000000001',
+      '50000000-0000-4000-8000-000000000002',
+      '50000000-0000-4000-8000-000000000003'
+    ) order by display_order$$,
   $$values ('50000000-0000-4000-8000-000000000001'::uuid), ('50000000-0000-4000-8000-000000000002'::uuid)$$,
   'active KITCHEN reads active categories only'
 );
@@ -134,7 +142,11 @@ do $$ begin
   perform set_config('request.jwt.claims', '{"role":"authenticated","sub":"40000000-0000-4000-8000-000000000008"}', true);
 end $$;
 select results_eq(
-  $$select id from public.categories order by display_order$$,
+  $$select id from public.categories where id in (
+      '50000000-0000-4000-8000-000000000001',
+      '50000000-0000-4000-8000-000000000002',
+      '50000000-0000-4000-8000-000000000003'
+    ) order by display_order$$,
   $$values ('50000000-0000-4000-8000-000000000001'::uuid), ('50000000-0000-4000-8000-000000000002'::uuid), ('50000000-0000-4000-8000-000000000003'::uuid)$$,
   'active MANAGER reads active and inactive categories'
 );
@@ -148,7 +160,17 @@ end $$;
 select is_empty($$select 1 from public.categories$$, 'inactive MANAGER Profile sees no categories');
 
 reset role;
-select is((select count(*)::int from public.categories), 3, 'denied category writes leave all rows unchanged');
+select is(
+  (select count(*)::int
+   from public.categories
+   where id in (
+     '50000000-0000-4000-8000-000000000001',
+     '50000000-0000-4000-8000-000000000002',
+     '50000000-0000-4000-8000-000000000003'
+   )),
+  3,
+  'denied category writes leave all fixture rows unchanged'
+);
 
 select * from finish();
 

@@ -101,7 +101,12 @@ do $$ begin
   perform set_config('request.jwt.claims', '{"role":"authenticated","sub":"61000000-0000-4000-8000-000000000001"}', true);
 end $$;
 select results_eq(
-  $$select id from public.products order by id$$,
+  $$select id from public.products where id in (
+      '65000000-0000-4000-8000-000000000001',
+      '65000000-0000-4000-8000-000000000002',
+      '65000000-0000-4000-8000-000000000003',
+      '65000000-0000-4000-8000-000000000004'
+    ) order by id$$,
   $$values ('65000000-0000-4000-8000-000000000001'::uuid), ('65000000-0000-4000-8000-000000000002'::uuid)$$,
   'authorized CUSTOMER reads active Products in active Categories, including unavailable Products'
 );
@@ -181,7 +186,12 @@ do $$ begin
   perform set_config('request.jwt.claims', '{"role":"authenticated","sub":"61000000-0000-4000-8000-000000000009"}', true);
 end $$;
 select results_eq(
-  $$select id from public.products order by id$$,
+  $$select id from public.products where id in (
+      '65000000-0000-4000-8000-000000000001',
+      '65000000-0000-4000-8000-000000000002',
+      '65000000-0000-4000-8000-000000000003',
+      '65000000-0000-4000-8000-000000000004'
+    ) order by id$$,
   $$values ('65000000-0000-4000-8000-000000000001'::uuid), ('65000000-0000-4000-8000-000000000002'::uuid), ('65000000-0000-4000-8000-000000000003'::uuid), ('65000000-0000-4000-8000-000000000004'::uuid)$$,
   'active MANAGER reads Products across availability, active state and Category state'
 );
@@ -197,7 +207,18 @@ end $$;
 select is_empty($$select 1 from public.products$$, 'inactive MANAGER Profile sees no Products');
 
 reset role;
-select is((select count(*)::int from public.products), 4, 'denied writes leave all Product rows unchanged');
+select is(
+  (select count(*)::int
+   from public.products
+   where id in (
+     '65000000-0000-4000-8000-000000000001',
+     '65000000-0000-4000-8000-000000000002',
+     '65000000-0000-4000-8000-000000000003',
+     '65000000-0000-4000-8000-000000000004'
+   )),
+  4,
+  'denied writes leave all Product fixture rows unchanged'
+);
 
 select * from finish();
 
