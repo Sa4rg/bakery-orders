@@ -56,6 +56,31 @@ isOneToOne: false
                   Relationships: [
 
                   ]
+                },"products": {
+                  Row: {
+                    "active": boolean,"availability_updated_at": string | null,"availability_updated_by": string | null,"available": boolean,"category_id": string,"created_at": string,"description": string | null,"id": string,"image_path": string | null,"name": string,"quantity_step": number,"unit_code": string,"updated_at": string
+                  }
+                  Insert: {
+                    "active": boolean,"availability_updated_at"?: string | null,"availability_updated_by"?: string | null,"available": boolean,"category_id": string,"created_at"?: string,"description"?: string | null,"id"?: string,"image_path"?: string | null,"name": string,"quantity_step": number,"unit_code": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "active"?: boolean,"availability_updated_at"?: string | null,"availability_updated_by"?: string | null,"available"?: boolean,"category_id"?: string,"created_at"?: string,"description"?: string | null,"id"?: string,"image_path"?: string | null,"name"?: string,"quantity_step"?: number,"unit_code"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "products_availability_updated_by_fkey"
+      columns: ["availability_updated_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "products_category_id_fkey"
+      columns: ["category_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"profiles": {
                   Row: {
                     "active": boolean,"created_at": string,"display_name": string,"id": string,"role": Database["public"]['Enums']["app_role"],"updated_at": string
