@@ -43,6 +43,19 @@ isOneToOne: false
                   Relationships: [
 
                   ]
+                },"categories": {
+                  Row: {
+                    "active": boolean,"created_at": string,"description": string | null,"display_order": number,"id": string,"name": string,"updated_at": string
+                  }
+                  Insert: {
+                    "active"?: boolean,"created_at"?: string,"description"?: string | null,"display_order"?: number,"id"?: string,"name": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "active"?: boolean,"created_at"?: string,"description"?: string | null,"display_order"?: number,"id"?: string,"name"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+
+                  ]
                 },"profiles": {
                   Row: {
                     "active": boolean,"created_at": string,"display_name": string,"id": string,"role": Database["public"]['Enums']["app_role"],"updated_at": string
