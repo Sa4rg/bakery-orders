@@ -32,6 +32,7 @@ export default function App({ bootstrap }: AppProps) {
                 displayName={profile.displayName}
                 role={profile.role}
                 catalogGateway={bootstrap.catalogGateway}
+                managerCatalogGateway={bootstrap.managerCatalogGateway}
                 onSignOut={signOut}
               />
             )}

@@ -19,6 +19,12 @@ export const fixtureBusinesses = {
   B: { id: '00000000-0000-4000-8000-000000000e02', name: 'E2E Fixture Bakery B' },
 } as const satisfies Record<BusinessKey, { id: string; name: string }>
 
+/** Reserved catalog rows used only by the focused Manager administration E2E. */
+export const managerCatalogFixture = {
+  categoryName: 'E2E Manager Administration Category',
+  productName: 'E2E Manager Administration Product',
+} as const
+
 export type FixtureKey =
   | 'customerA'
   | 'customerB'
@@ -175,6 +181,25 @@ async function findFixtureUserIds(admin: LocalAdminClient): Promise<string[]> {
 
 /** Removes only the exact fixture identities and Businesses. Idempotent. */
 export async function removeFixtures(admin: LocalAdminClient): Promise<void> {
+  // Exact reserved names only; remove the dependent Product before its Category.
+  const catalogProduct = await admin
+    .from('products')
+    .delete()
+    .eq('name', managerCatalogFixture.productName)
+
+  if (catalogProduct.error) {
+    fail('remove the Manager catalog E2E Product')
+  }
+
+  const catalogCategory = await admin
+    .from('categories')
+    .delete()
+    .eq('name', managerCatalogFixture.categoryName)
+
+  if (catalogCategory.error) {
+    fail('remove the Manager catalog E2E Category')
+  }
+
   const userIds = await findFixtureUserIds(admin)
 
   if (userIds.length > 0) {
