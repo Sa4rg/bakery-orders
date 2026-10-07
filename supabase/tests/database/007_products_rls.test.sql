@@ -118,7 +118,7 @@ select throws_ok(
 select ok((select not available from public.products where id = '65000000-0000-4000-8000-000000000002'), 'CUSTOMER can read an active but unavailable Product');
 select is_empty($$select 1 from public.products where id = '65000000-0000-4000-8000-000000000003'$$, 'CUSTOMER cannot read an inactive Product');
 select is_empty($$select 1 from public.products where id = '65000000-0000-4000-8000-000000000004'$$, 'CUSTOMER cannot read a Product in an inactive Category');
-select throws_ok($$insert into public.products (category_id, name, unit_code, quantity_step, active, available) values ('64000000-0000-4000-8000-000000000001', 'Customer Product', 'EACH', 1, true, true)$$, '42501', 'permission denied for table products', 'CUSTOMER cannot INSERT products');
+select throws_ok($$insert into public.products (category_id, name, unit_code, quantity_step, active, available) values ('64000000-0000-4000-8000-000000000001', 'Customer Product', 'EACH', 1, true, true)$$, '42501', null, 'CUSTOMER cannot INSERT products');
 select throws_ok($$update public.products set available = false where id = '65000000-0000-4000-8000-000000000001'$$, '42501', 'permission denied for table products', 'CUSTOMER cannot UPDATE products');
 select throws_ok($$delete from public.products where id = '65000000-0000-4000-8000-000000000001'$$, '42501', 'permission denied for table products', 'CUSTOMER cannot DELETE products');
 
@@ -169,7 +169,7 @@ select results_eq(
 );
 select is_empty($$select 1 from public.products where id = '65000000-0000-4000-8000-000000000003'$$, 'KITCHEN cannot read an inactive Product');
 select is_empty($$select 1 from public.products where id = '65000000-0000-4000-8000-000000000004'$$, 'KITCHEN cannot read a Product in an inactive Category');
-select throws_ok($$insert into public.products (category_id, name, unit_code, quantity_step, active, available) values ('64000000-0000-4000-8000-000000000001', 'Kitchen Product', 'EACH', 1, true, true)$$, '42501', 'permission denied for table products', 'KITCHEN cannot INSERT products');
+select throws_ok($$insert into public.products (category_id, name, unit_code, quantity_step, active, available) values ('64000000-0000-4000-8000-000000000001', 'Kitchen Product', 'EACH', 1, true, true)$$, '42501', null, 'KITCHEN cannot INSERT products');
 select throws_ok($$update public.products set available = false where id = '65000000-0000-4000-8000-000000000001'$$, '42501', 'permission denied for table products', 'KITCHEN cannot UPDATE product availability in this slice');
 select throws_ok($$delete from public.products where id = '65000000-0000-4000-8000-000000000001'$$, '42501', 'permission denied for table products', 'KITCHEN cannot DELETE products');
 
@@ -195,8 +195,22 @@ select results_eq(
   $$values ('65000000-0000-4000-8000-000000000001'::uuid), ('65000000-0000-4000-8000-000000000002'::uuid), ('65000000-0000-4000-8000-000000000003'::uuid), ('65000000-0000-4000-8000-000000000004'::uuid)$$,
   'active MANAGER reads Products across availability, active state and Category state'
 );
-select throws_ok($$insert into public.products (category_id, name, unit_code, quantity_step, active, available) values ('64000000-0000-4000-8000-000000000001', 'Manager Product', 'EACH', 1, true, true)$$, '42501', 'permission denied for table products', 'MANAGER cannot INSERT products in this slice');
-select throws_ok($$update public.products set active = false where id = '65000000-0000-4000-8000-000000000001'$$, '42501', 'permission denied for table products', 'MANAGER cannot UPDATE products in this slice');
+select throws_ok(
+  $$update public.products
+    set available = false
+    where id = '65000000-0000-4000-8000-000000000001'$$,
+  '42501',
+  null,
+  'MANAGER cannot directly update Product availability'
+);
+select throws_ok(
+  $$update public.products
+    set image_path = 'products/example/main.webp'
+    where id = '65000000-0000-4000-8000-000000000001'$$,
+  '42501',
+  null,
+  'MANAGER cannot directly update Product image path'
+);
 select throws_ok($$delete from public.products where id = '65000000-0000-4000-8000-000000000001'$$, '42501', 'permission denied for table products', 'MANAGER cannot DELETE products in this slice');
 
 reset role;

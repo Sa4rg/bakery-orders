@@ -7,12 +7,15 @@ import type { AuthGateway } from '../features/auth/application/authGateway'
 import { createSupabaseAuthGateway } from '../features/auth/data/createSupabaseAuthGateway'
 import type { CatalogGateway } from '../features/catalog/application/catalogGateway'
 import { createSupabaseCatalogGateway } from '../features/catalog/data/createSupabaseCatalogGateway'
+import type { ManagerCatalogGateway } from '../features/catalog/application/managerCatalogGateway'
+import { createSupabaseManagerCatalogGateway } from '../features/catalog/data/createSupabaseManagerCatalogGateway'
 
 export type AppBootstrap =
   | {
       status: 'ready'
       authGateway: AuthGateway
       catalogGateway: CatalogGateway
+      managerCatalogGateway: ManagerCatalogGateway
     }
   | { status: 'misconfigured'; variables: SupabaseConfigVariable[] }
 
@@ -33,5 +36,6 @@ export function createAppBootstrap(env: Record<string, unknown>): AppBootstrap {
     status: 'ready',
     authGateway: createSupabaseAuthGateway(client),
     catalogGateway: createSupabaseCatalogGateway(client),
+    managerCatalogGateway: createSupabaseManagerCatalogGateway(client),
   }
 }

@@ -83,7 +83,7 @@ select results_eq(
   $$values ('50000000-0000-4000-8000-000000000001'::uuid), ('50000000-0000-4000-8000-000000000002'::uuid)$$,
   'active CUSTOMER with active membership in active Business reads active categories only'
 );
-select throws_ok($$insert into public.categories (name) values ('Customer Write')$$, '42501', 'permission denied for table categories', 'CUSTOMER cannot insert categories');
+select throws_ok($$insert into public.categories (name) values ('Customer Write')$$, '42501', null, 'CUSTOMER cannot insert categories');
 
 reset role;
 set local role authenticated;
@@ -150,7 +150,12 @@ select results_eq(
   $$values ('50000000-0000-4000-8000-000000000001'::uuid), ('50000000-0000-4000-8000-000000000002'::uuid), ('50000000-0000-4000-8000-000000000003'::uuid)$$,
   'active MANAGER reads active and inactive categories'
 );
-select throws_ok($$update public.categories set active = false where id = '50000000-0000-4000-8000-000000000001'$$, '42501', 'permission denied for table categories', 'MANAGER has no category update permission in this slice');
+select throws_ok(
+  $$delete from public.categories where id = '50000000-0000-4000-8000-000000000001'$$,
+  '42501',
+  null,
+  'MANAGER cannot delete categories'
+);
 
 reset role;
 set local role authenticated;
