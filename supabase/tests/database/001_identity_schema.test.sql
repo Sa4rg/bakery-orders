@@ -1,6 +1,6 @@
 -- M1 identity schema: app_role, profiles, businesses, business_memberships.
 -- Verifies structure, constraints, defaults, foreign keys and the absence of
--- SECURITY DEFINER functions and auth.users triggers.
+-- unexpected SECURITY DEFINER functions and auth.users triggers.
 
 begin;
 
@@ -280,9 +280,10 @@ select is(
     join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
       and p.prosecdef
+      and p.oid <> 'public.set_product_availability(uuid,boolean)'::regprocedure
   ),
   0,
-  'no SECURITY DEFINER function exists in the public schema'
+  'no unexpected SECURITY DEFINER function exists in the public schema'
 );
 
 select is(

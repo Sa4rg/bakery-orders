@@ -8,11 +8,18 @@ import {
   customerUserId,
 } from '../features/auth/testing/fakeAuthGateway'
 import type { CustomerCatalog } from '../features/catalog/application/catalogGateway'
-import { createFakeCatalogGateway } from '../features/catalog/testing/fakeCatalogGateway'
 import type { ManagerCatalogGateway } from '../features/catalog/application/managerCatalogGateway'
+import type { ProductAvailabilityGateway } from '../features/catalog/application/productAvailabilityGateway'
+import { createFakeCatalogGateway } from '../features/catalog/testing/fakeCatalogGateway'
+
 import App from './App'
 
 const emptyCatalog: CustomerCatalog = { categories: [], products: [] }
+
+const productAvailabilityGateway: ProductAvailabilityGateway = {
+  setAvailability: async (_productId, available) => available,
+}
+
 const managerCatalogGateway: ManagerCatalogGateway = {
   loadManagerCatalog: async () => ({ categories: [], products: [] }),
   createCategory: async () => 'category-id',
@@ -31,6 +38,7 @@ function renderReadyApp(authGateway = createFakeAuthGateway()) {
         authGateway,
         catalogGateway: catalogFake.gateway,
         managerCatalogGateway,
+        productAvailabilityGateway,
       }}
     />,
   )
