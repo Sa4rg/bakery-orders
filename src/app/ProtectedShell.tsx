@@ -3,6 +3,8 @@ import type { CatalogGateway } from '../features/catalog/application/catalogGate
 import { CustomerCatalog } from '../features/catalog/components/CustomerCatalog'
 import type { ManagerCatalogGateway } from '../features/catalog/application/managerCatalogGateway'
 import { ManagerCatalogAdministration } from '../features/catalog/components/ManagerCatalog'
+import type { ProductAvailabilityGateway } from '../features/catalog/application/productAvailabilityGateway'
+import { KitchenCatalogAvailability } from '../features/catalog/components/KitchenCatalogAvailability'
 import type { AppRole } from '../features/auth/domain/access'
 
 interface ProtectedShellProps {
@@ -10,6 +12,7 @@ interface ProtectedShellProps {
   role: AppRole
   catalogGateway: CatalogGateway
   managerCatalogGateway: ManagerCatalogGateway
+  productAvailabilityGateway: ProductAvailabilityGateway
   onSignOut(): Promise<boolean>
 }
 
@@ -19,6 +22,7 @@ export function ProtectedShell({
   role,
   catalogGateway,
   managerCatalogGateway,
+  productAvailabilityGateway,
   onSignOut,
 }: ProtectedShellProps) {
   const [signOutFailed, setSignOutFailed] = useState(false)
@@ -42,7 +46,18 @@ export function ProtectedShell({
         <dd>{role}</dd>
       </dl>
       {role === 'CUSTOMER' && <CustomerCatalog gateway={catalogGateway} />}
-      {role === 'MANAGER' && <ManagerCatalogAdministration gateway={managerCatalogGateway} />}
+      {role === 'KITCHEN' && (
+        <KitchenCatalogAvailability
+          catalogGateway={catalogGateway}
+          availabilityGateway={productAvailabilityGateway}
+        />
+      )}
+      {role === 'MANAGER' && (
+        <ManagerCatalogAdministration
+          gateway={managerCatalogGateway}
+          availabilityGateway={productAvailabilityGateway}
+        />
+      )}
       <button type="button" onClick={() => void handleSignOut()}>
         Sign out
       </button>

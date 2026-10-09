@@ -25,6 +25,14 @@ export const managerCatalogFixture = {
   productName: 'E2E Manager Administration Product',
 } as const
 
+/** Reserved catalog rows used only by the Product availability E2E. */
+export const productAvailabilityFixture = {
+  categoryId: '00000000-0000-4000-8000-000000000e11',
+  productId: '00000000-0000-4000-8000-000000000e12',
+  categoryName: 'E2E Product Availability Category',
+  productName: 'E2E Product Availability Product',
+} as const
+
 export type FixtureKey =
   | 'customerA'
   | 'customerB'
@@ -179,8 +187,25 @@ async function findFixtureUserIds(admin: LocalAdminClient): Promise<string[]> {
   }
 }
 
-/** Removes only the exact fixture identities and Businesses. Idempotent. */
+/** Removes only the exact reserved E2E rows. Idempotent. */
 export async function removeFixtures(admin: LocalAdminClient): Promise<void> {
+  const availabilityProduct = await admin
+    .from('products')
+    .delete()
+    .eq('id', productAvailabilityFixture.productId)
+
+  if (availabilityProduct.error) {
+    fail('remove the Product availability E2E Product')
+  }
+
+  const availabilityCategory = await admin
+    .from('categories')
+    .delete()
+    .eq('id', productAvailabilityFixture.categoryId)
+
+  if (availabilityCategory.error) {
+    fail('remove the Product availability E2E Category')
+  }
   // Exact reserved names only; remove the dependent Product before its Category.
   const catalogProduct = await admin
     .from('products')
@@ -203,7 +228,8 @@ export async function removeFixtures(admin: LocalAdminClient): Promise<void> {
   const userIds = await findFixtureUserIds(admin)
 
   if (userIds.length > 0) {
-    // FKs are ON DELETE RESTRICT: memberships, then profiles, then Auth users.
+    // Fixture Profiles may be referenced by memberships and Product availability
+    // audit metadata. Clear those test-only references before deleting Profiles.
     const memberships = await admin
       .from('business_memberships')
       .delete()
@@ -211,6 +237,18 @@ export async function removeFixtures(admin: LocalAdminClient): Promise<void> {
 
     if (memberships.error) {
       fail('remove fixture memberships')
+    }
+
+    const productAvailabilityAudit = await admin
+      .from('products')
+      .update({
+        availability_updated_at: null,
+        availability_updated_by: null,
+      })
+      .in('availability_updated_by', userIds)
+
+    if (productAvailabilityAudit.error) {
+      fail('clear fixture Product availability audit references')
     }
 
     const profiles = await admin.from('profiles').delete().in('id', userIds)
@@ -244,6 +282,33 @@ export async function provisionFixtures(
   password: string,
 ): Promise<void> {
   await removeFixtures(admin)
+
+  const availabilityCategory = await admin.from('categories').insert({
+    id: productAvailabilityFixture.categoryId,
+    name: productAvailabilityFixture.categoryName,
+    description: 'Reserved Product availability E2E data.',
+    active: true,
+    display_order: 101,
+  })
+
+  if (availabilityCategory.error) {
+    fail('create the Product availability E2E Category')
+  }
+
+  const availabilityProduct = await admin.from('products').insert({
+    id: productAvailabilityFixture.productId,
+    category_id: productAvailabilityFixture.categoryId,
+    name: productAvailabilityFixture.productName,
+    description: 'Reserved Product availability E2E data.',
+    unit_code: 'UNIT',
+    quantity_step: 1,
+    active: true,
+    available: true,
+  })
+
+  if (availabilityProduct.error) {
+    fail('create the Product availability E2E Product')
+  }
 
   const businesses = await admin
     .from('businesses')

@@ -11,9 +11,12 @@ import type {
   ProductUpdateInput,
 } from '../domain/managerCatalogSchema'
 import { CategoryForm, ProductForm } from './ManagerCatalogForms'
+import type { ProductAvailabilityGateway } from '../application/productAvailabilityGateway'
+import { ProductAvailabilityControl } from './ProductAvailabilityControl'
 
 interface ManagerCatalogAdministrationProps {
   gateway: ManagerCatalogGateway
+  availabilityGateway: ProductAvailabilityGateway
 }
 
 type LoadState =
@@ -26,7 +29,7 @@ type ActiveForm =
   | { entity: 'product'; id: string | null }
   | null
 
-export function ManagerCatalogAdministration({ gateway }: ManagerCatalogAdministrationProps) {
+export function ManagerCatalogAdministration({ gateway, availabilityGateway, }: ManagerCatalogAdministrationProps) {
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [activeForm, setActiveForm] = useState<ActiveForm>(null)
@@ -127,6 +130,26 @@ export function ManagerCatalogAdministration({ gateway }: ManagerCatalogAdminist
     }))
   }
 
+  function updateProductAvailability(productId: string, available: boolean) {
+    setLoadState((current) => {
+      if (current.status !== 'loaded') {
+        return current
+      }
+
+      return {
+        status: 'loaded',
+        catalog: {
+          ...current.catalog,
+          products: current.catalog.products.map((product) =>
+            product.id === productId
+              ? { ...product, available }
+              : product,
+          ),
+        },
+      }
+    })
+  }
+
   return (
     <section aria-labelledby="manager-catalog-heading">
       <h2 id="manager-catalog-heading">Catalog administration</h2>
@@ -211,7 +234,15 @@ export function ManagerCatalogAdministration({ gateway }: ManagerCatalogAdminist
                         <p>Unit: {product.unitCode}</p>
                         <p>Quantity step: {product.quantityStep}</p>
                         <p>{product.active ? 'Active' : 'Inactive'}</p>
-                        <p>{product.available ? 'Available' : 'Unavailable'}</p>
+                        <ProductAvailabilityControl
+                          productId={product.id}
+                          productName={product.name}
+                          available={product.available}
+                          gateway={availabilityGateway}
+                          onAvailabilityChanged={(available) =>
+                            updateProductAvailability(product.id, available)
+                          }
+                        />
                         <button type="button" disabled={mutationPending} onClick={() => setActiveForm({ entity: 'product', id: product.id })}>Edit product</button>
                         <button type="button" disabled={mutationPending} onClick={() => void changeProductStatus(product, !product.active)}>
                           {product.active ? 'Deactivate product' : 'Reactivate product'}

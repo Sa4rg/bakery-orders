@@ -5,6 +5,7 @@ import type {
   ManagerCatalog,
   ManagerCatalogGateway,
 } from '../application/managerCatalogGateway'
+import type { ProductAvailabilityGateway } from '../application/productAvailabilityGateway'
 import { ManagerCatalogAdministration } from './ManagerCatalog'
 
 const categoryId = '71000000-0000-4000-8000-000000000001'
@@ -37,13 +38,38 @@ function createGateway(outcomes: Array<ManagerCatalog | Error | Promise<ManagerC
   return gateway
 }
 
+function createAvailabilityGateway() {
+  const setAvailability = vi.fn(
+    async (_productId: string, available: boolean) => available,
+  )
+
+  const gateway: ProductAvailabilityGateway = {
+    setAvailability,
+  }
+
+  return { gateway, setAvailability }
+}
+
+function renderManagerCatalog(
+  gateway: ManagerCatalogGateway = createGateway(),
+  availabilityGateway: ProductAvailabilityGateway =
+    createAvailabilityGateway().gateway,
+) {
+  return render(
+    <ManagerCatalogAdministration
+      gateway={gateway}
+      availabilityGateway={availabilityGateway}
+    />,
+  )
+}
+
 describe('ManagerCatalogAdministration', () => {
   it('shows loading until the Manager catalog arrives', async () => {
     let resolve: ((value: ManagerCatalog) => void) | undefined
     const gateway = createGateway([
       new Promise<ManagerCatalog>((done) => { resolve = done }),
     ])
-    render(<ManagerCatalogAdministration gateway={gateway} />)
+    renderManagerCatalog(gateway)
 
     expect(screen.getByRole('status')).toHaveTextContent('Loading catalog')
     expect(screen.queryByText('No categories yet.')).toBeNull()
@@ -53,7 +79,7 @@ describe('ManagerCatalogAdministration', () => {
   })
 
   it('shows active and inactive records and keeps existing availability read-only', async () => {
-    render(<ManagerCatalogAdministration gateway={createGateway()} />)
+    renderManagerCatalog()
 
     expect(await screen.findByText('Archive')).toBeVisible()
     expect(screen.getAllByText('Inactive', { selector: 'p' })).toHaveLength(2)
@@ -66,7 +92,7 @@ describe('ManagerCatalogAdministration', () => {
   it('creates a Category and reloads authoritative catalog after persistence', async () => {
     const user = userEvent.setup()
     const gateway = createGateway([catalog, catalog])
-    render(<ManagerCatalogAdministration gateway={gateway} />)
+    renderManagerCatalog(gateway)
     await screen.findByText('Bread')
 
     await user.click(screen.getByRole('button', { name: 'Create category' }))
@@ -83,7 +109,7 @@ describe('ManagerCatalogAdministration', () => {
   it('edits and deactivates a Category, and reactivates an inactive Category', async () => {
     const user = userEvent.setup()
     const gateway = createGateway()
-    render(<ManagerCatalogAdministration gateway={gateway} />)
+    renderManagerCatalog(gateway)
     await screen.findByText('Bread')
     const bread = screen.getByRole('article', { name: 'Category: Bread' })
     await user.click(within(bread).getByRole('button', { name: 'Edit category' }))
@@ -103,7 +129,7 @@ describe('ManagerCatalogAdministration', () => {
   it('creates a Product with explicit initial availability', async () => {
     const user = userEvent.setup()
     const gateway = createGateway()
-    render(<ManagerCatalogAdministration gateway={gateway} />)
+    renderManagerCatalog(gateway)
     await screen.findByText('Bread')
     await user.click(screen.getByRole('button', { name: 'Create product' }))
     await user.selectOptions(screen.getByLabelText('Product category'), categoryId)
@@ -120,7 +146,7 @@ describe('ManagerCatalogAdministration', () => {
   it('edits/deactivates and reactivates Products without sending availability', async () => {
     const user = userEvent.setup()
     const gateway = createGateway()
-    render(<ManagerCatalogAdministration gateway={gateway} />)
+    renderManagerCatalog(gateway)
     await screen.findByRole('heading', { name: 'Sourdough' })
     const sourdough = screen.getByRole('article', { name: 'Product: Sourdough' })
     await user.click(within(sourdough).getByRole('button', { name: 'Edit product' }))
@@ -153,7 +179,7 @@ describe('ManagerCatalogAdministration', () => {
     vi.mocked(gateway.createCategory).mockImplementation(() => new Promise((resolve) => {
       finish = () => resolve('created')
     }))
-    render(<ManagerCatalogAdministration gateway={gateway} />)
+    renderManagerCatalog(gateway)
     await screen.findByText('Bread')
     await user.click(screen.getByRole('button', { name: 'Create category' }))
     await user.type(screen.getByLabelText('Category name'), 'Temporary')
@@ -168,7 +194,7 @@ describe('ManagerCatalogAdministration', () => {
     const user = userEvent.setup()
     const gateway = createGateway()
     vi.mocked(gateway.createCategory).mockRejectedValue(new Error('PostgREST secret SQL detail'))
-    render(<ManagerCatalogAdministration gateway={gateway} />)
+    renderManagerCatalog(gateway)
     await screen.findByText('Bread')
     await user.click(screen.getByRole('button', { name: 'Create category' }))
     await user.type(screen.getByLabelText('Category name'), 'Temporary')
@@ -181,11 +207,38 @@ describe('ManagerCatalogAdministration', () => {
   it('retries a load failure and shows empty states for both sections', async () => {
     const user = userEvent.setup()
     const gateway = createGateway([new Error('private detail'), { categories: [], products: [] }])
-    render(<ManagerCatalogAdministration gateway={gateway} />)
+    renderManagerCatalog(gateway)
     expect(await screen.findByRole('alert')).toHaveTextContent('We could not load the Manager catalog.')
     await user.click(screen.getByRole('button', { name: 'Retry' }))
     expect(await screen.findByText('No categories yet.')).toBeVisible()
     expect(screen.getByText('No products yet.')).toBeVisible()
     expect(gateway.loadManagerCatalog).toHaveBeenCalledTimes(2)
+  })
+
+  it('changes Product availability through the trusted availability gateway', async () => {
+    const user = userEvent.setup()
+    const managerGateway = createGateway()
+    const { gateway: availabilityGateway, setAvailability } =
+      createAvailabilityGateway()
+
+    renderManagerCatalog(managerGateway, availabilityGateway)
+
+    const sourdough = await screen.findByRole('article', {
+      name: 'Product: Sourdough',
+    })
+
+    expect(within(sourdough).getByText('Unavailable')).toBeVisible()
+
+    await user.click(
+      within(sourdough).getByRole('button', {
+        name: 'Mark Sourdough available',
+      }),
+    )
+
+    expect(setAvailability).toHaveBeenCalledWith(productId, true)
+
+    expect(within(sourdough).getByText('Available')).toBeVisible()
+
+    expect(managerGateway.updateProduct).not.toHaveBeenCalled()
   })
 })
