@@ -100,7 +100,9 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "set_product_availability":
+{ Args: { "p_available": boolean,"p_product_id": string }; Returns: boolean
+                           }
           }
           Enums: {
             "app_role": "CUSTOMER"|"KITCHEN"|"MANAGER"

@@ -1,6 +1,6 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   buildMembership,
   buildProfile,
@@ -8,11 +8,18 @@ import {
   customerUserId,
 } from '../features/auth/testing/fakeAuthGateway'
 import type { CustomerCatalog } from '../features/catalog/application/catalogGateway'
-import { createFakeCatalogGateway } from '../features/catalog/testing/fakeCatalogGateway'
 import type { ManagerCatalogGateway } from '../features/catalog/application/managerCatalogGateway'
+import type { ProductAvailabilityGateway } from '../features/catalog/application/productAvailabilityGateway'
+import { createFakeCatalogGateway } from '../features/catalog/testing/fakeCatalogGateway'
+
 import App from './App'
 
 const emptyCatalog: CustomerCatalog = { categories: [], products: [] }
+
+const productAvailabilityGateway: ProductAvailabilityGateway = {
+  setAvailability: async (_productId, available) => available,
+}
+
 const managerCatalogGateway: ManagerCatalogGateway = {
   loadManagerCatalog: async () => ({ categories: [], products: [] }),
   createCategory: async () => 'category-id',
@@ -31,6 +38,7 @@ function renderReadyApp(authGateway = createFakeAuthGateway()) {
         authGateway,
         catalogGateway: catalogFake.gateway,
         managerCatalogGateway,
+        productAvailabilityGateway,
       }}
     />,
   )
@@ -144,6 +152,173 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Catalog' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeVisible()
+  })
+
+  it('shows KITCHEN availability operations through the trusted availability gateway', async () => {
+    const user = userEvent.setup()
+
+    const authGateway = createFakeAuthGateway({
+      profile: buildProfile({ role: 'KITCHEN' }),
+    })
+
+    const catalog: CustomerCatalog = {
+      categories: [
+        {
+          id: '82000000-0000-4000-8000-000000000001',
+          name: 'Bread',
+          description: null,
+          displayOrder: 1,
+        },
+      ],
+      products: [
+        {
+          id: '83000000-0000-4000-8000-000000000001',
+          categoryId: '82000000-0000-4000-8000-000000000001',
+          name: 'Sourdough',
+          description: 'Country loaf.',
+          unitCode: 'UNIT',
+          quantityStep: 1,
+          available: true,
+        },
+      ],
+    }
+
+    const catalogFake = createFakeCatalogGateway([catalog])
+
+    const setAvailability = vi.fn(
+      async (_productId: string, available: boolean) => available,
+    )
+
+    const availabilityGateway: ProductAvailabilityGateway = {
+      setAvailability,
+    }
+
+    render(
+      <App
+        bootstrap={{
+          status: 'ready',
+          authGateway,
+          catalogGateway: catalogFake.gateway,
+          managerCatalogGateway,
+          productAvailabilityGateway: availabilityGateway,
+        }}
+      />,
+    )
+
+    act(() => authGateway.emit({ userId: customerUserId }))
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Product availability',
+      }),
+    ).toBeVisible()
+
+    expect(
+      screen.queryByRole('heading', {
+        name: 'Catalog administration',
+      }),
+    ).toBeNull()
+
+    expect(
+      screen.queryByRole('heading', {
+        name: 'Catalog',
+      }),
+    ).toBeNull()
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Mark Sourdough unavailable',
+      }),
+    )
+
+    expect(setAvailability).toHaveBeenCalledWith(
+      '83000000-0000-4000-8000-000000000001',
+      false,
+    )
+
+    expect(await screen.findByText('Unavailable')).toBeVisible()
+  })
+
+  it('lets MANAGER change Product availability through the trusted availability command', async () => {
+    const user = userEvent.setup()
+
+    const authGateway = createFakeAuthGateway({
+      profile: buildProfile({ role: 'MANAGER' }),
+    })
+
+    const updateProduct = vi.fn(async () => undefined)
+
+    const managerGateway: ManagerCatalogGateway = {
+      loadManagerCatalog: vi.fn(async () => ({
+        categories: [
+          {
+            id: '82000000-0000-4000-8000-000000000001',
+            name: 'Bread',
+            description: null,
+            active: true,
+            displayOrder: 1,
+          },
+        ],
+        products: [
+          {
+            id: '83000000-0000-4000-8000-000000000001',
+            categoryId: '82000000-0000-4000-8000-000000000001',
+            name: 'Sourdough',
+            description: 'Country loaf.',
+            unitCode: 'UNIT',
+            quantityStep: 1,
+            active: true,
+            available: false,
+          },
+        ],
+      })),
+      createCategory: vi.fn(async () => 'category-id'),
+      updateCategory: vi.fn(async () => undefined),
+      createProduct: vi.fn(async () => 'product-id'),
+      updateProduct,
+    }
+
+    const setAvailability = vi.fn(
+      async (_productId: string, available: boolean) => available,
+    )
+
+    const availabilityGateway: ProductAvailabilityGateway = {
+      setAvailability,
+    }
+
+    const catalogFake = createFakeCatalogGateway([emptyCatalog])
+
+    render(
+      <App
+        bootstrap={{
+          status: 'ready',
+          authGateway,
+          catalogGateway: catalogFake.gateway,
+          managerCatalogGateway: managerGateway,
+          productAvailabilityGateway: availabilityGateway,
+        }}
+      />,
+    )
+
+    act(() => authGateway.emit({ userId: customerUserId }))
+
+    const product = await screen.findByRole('article', {
+      name: 'Product: Sourdough',
+    })
+
+    await user.click(
+      within(product).getByRole('button', {
+        name: 'Mark Sourdough available',
+      }),
+    )
+
+    expect(setAvailability).toHaveBeenCalledWith(
+      '83000000-0000-4000-8000-000000000001',
+      true,
+    )
+
+    expect(updateProduct).not.toHaveBeenCalled()
+    expect(within(product).getByText('Available')).toBeVisible()
   })
 
   it.each(['KITCHEN', 'MANAGER'] as const)(

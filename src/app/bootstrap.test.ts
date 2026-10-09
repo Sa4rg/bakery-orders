@@ -32,6 +32,9 @@ describe('createAppBootstrap', () => {
       expect(typeof bootstrap.authGateway.signInWithPassword).toBe('function')
       expect(typeof bootstrap.authGateway.signOutLocal).toBe('function')
       expect(typeof bootstrap.catalogGateway.loadCatalog).toBe('function')
+      expect(
+        typeof bootstrap.productAvailabilityGateway.setAvailability,
+      ).toBe('function')
       expect(typeof bootstrap.managerCatalogGateway.loadManagerCatalog).toBe(
         'function',
       )
