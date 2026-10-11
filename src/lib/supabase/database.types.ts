@@ -56,6 +56,37 @@ isOneToOne: false
                   Relationships: [
 
                   ]
+                },"order_events": {
+                  Row: {
+                    "actor_user_id": string | null,"event_type": string,"id": string,"metadata": NonNullable<Json>,"new_value": Json | null,"occurred_at": string,"order_id": string,"order_item_id": string | null,"previous_value": Json | null,"reason": string | null
+                  }
+                  Insert: {
+                    "actor_user_id"?: string | null,"event_type": string,"id"?: string,"metadata": NonNullable<Json>,"new_value"?: Json | null,"occurred_at"?: string,"order_id": string,"order_item_id"?: string | null,"previous_value"?: Json | null,"reason"?: string | null
+                  }
+                  Update: {
+                    "actor_user_id"?: string | null,"event_type"?: string,"id"?: string,"metadata"?: NonNullable<Json>,"new_value"?: Json | null,"occurred_at"?: string,"order_id"?: string,"order_item_id"?: string | null,"previous_value"?: Json | null,"reason"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "order_events_actor_user_id_fkey"
+      columns: ["actor_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_events_order_id_fkey"
+      columns: ["order_id"]
+isOneToOne: false
+      referencedRelation: "orders"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_events_order_item_id_fkey"
+      columns: ["order_item_id"]
+isOneToOne: false
+      referencedRelation: "order_items"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"order_items": {
                   Row: {
                     "created_at": string,"id": string,"order_id": string,"prepared_quantity": number,"product_id": string,"product_name_snapshot": string,"quantity_step_snapshot": number,"requested_quantity": number,"unavailable_quantity": number,"unit_code_snapshot": string,"updated_at": string
