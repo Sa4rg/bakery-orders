@@ -11,6 +11,8 @@ import type { ManagerCatalogGateway } from '../features/catalog/application/mana
 import { createSupabaseManagerCatalogGateway } from '../features/catalog/data/createSupabaseManagerCatalogGateway'
 import type { ProductAvailabilityGateway } from '../features/catalog/application/productAvailabilityGateway'
 import { createSupabaseProductAvailabilityGateway } from '../features/catalog/data/createSupabaseProductAvailabilityGateway'
+import type { CreateOrderGateway } from '../features/orders/application/createOrderGateway'
+import { createSupabaseCreateOrderGateway } from '../features/orders/data/createSupabaseCreateOrderGateway'
 
 export type AppBootstrap =
   | {
@@ -19,6 +21,7 @@ export type AppBootstrap =
       catalogGateway: CatalogGateway
       productAvailabilityGateway: ProductAvailabilityGateway
       managerCatalogGateway: ManagerCatalogGateway
+      createOrderGateway: CreateOrderGateway
     }
   | { status: 'misconfigured'; variables: SupabaseConfigVariable[] }
 
@@ -41,5 +44,6 @@ export function createAppBootstrap(env: Record<string, unknown>): AppBootstrap {
     catalogGateway: createSupabaseCatalogGateway(client),
     productAvailabilityGateway: createSupabaseProductAvailabilityGateway(client),
     managerCatalogGateway: createSupabaseManagerCatalogGateway(client),
+    createOrderGateway: createSupabaseCreateOrderGateway(client),
   }
 }

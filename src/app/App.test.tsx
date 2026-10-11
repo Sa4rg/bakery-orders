@@ -11,6 +11,7 @@ import type { CustomerCatalog } from '../features/catalog/application/catalogGat
 import type { ManagerCatalogGateway } from '../features/catalog/application/managerCatalogGateway'
 import type { ProductAvailabilityGateway } from '../features/catalog/application/productAvailabilityGateway'
 import { createFakeCatalogGateway } from '../features/catalog/testing/fakeCatalogGateway'
+import type { CreateOrderGateway } from '../features/orders/application/createOrderGateway'
 
 import App from './App'
 
@@ -28,6 +29,11 @@ const managerCatalogGateway: ManagerCatalogGateway = {
   updateProduct: async () => undefined,
 }
 
+const createOrderGateway: CreateOrderGateway = {
+  createOrder: async () =>
+    '40000000-0000-4000-8000-000000000001',
+}
+
 function renderReadyApp(authGateway = createFakeAuthGateway()) {
   const catalogFake = createFakeCatalogGateway([emptyCatalog])
 
@@ -39,6 +45,7 @@ function renderReadyApp(authGateway = createFakeAuthGateway()) {
         catalogGateway: catalogFake.gateway,
         managerCatalogGateway,
         productAvailabilityGateway,
+        createOrderGateway,
       }}
     />,
   )
@@ -201,6 +208,7 @@ describe('App', () => {
           catalogGateway: catalogFake.gateway,
           managerCatalogGateway,
           productAvailabilityGateway: availabilityGateway,
+          createOrderGateway,
         }}
       />,
     )
@@ -296,6 +304,7 @@ describe('App', () => {
           catalogGateway: catalogFake.gateway,
           managerCatalogGateway: managerGateway,
           productAvailabilityGateway: availabilityGateway,
+          createOrderGateway,
         }}
       />,
     )
