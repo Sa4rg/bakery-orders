@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import type {
   CatalogGateway,
+  CatalogProduct,
   CustomerCatalog as CustomerCatalogData,
 } from '../application/catalogGateway'
 import { filterCatalogProducts } from '../domain/filterCatalogProducts'
 
 interface CustomerCatalogProps {
   gateway: CatalogGateway
+  onAddProduct?(product: CatalogProduct): void
 }
 
 type LoadState =
@@ -14,7 +16,7 @@ type LoadState =
   | { status: 'error' }
   | { status: 'loaded'; catalog: CustomerCatalogData }
 
-export function CustomerCatalog({ gateway }: CustomerCatalogProps) {
+export function CustomerCatalog({ gateway, onAddProduct }: CustomerCatalogProps) {
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
@@ -123,6 +125,16 @@ export function CustomerCatalog({ gateway }: CustomerCatalogProps) {
                       Unit: {product.unitCode} · order step: {product.quantityStep}
                     </p>
                     <p>{product.available ? 'Available' : 'Unavailable'}</p>
+                    {onAddProduct !== undefined && (
+                      <button
+                        type="button"
+                        aria-label={`Add ${product.name} to cart`}
+                        disabled={!product.available}
+                        onClick={() => onAddProduct(product)}
+                      >
+                        Add to cart
+                      </button>
+                    )}
                   </article>
                 </li>
               ))}

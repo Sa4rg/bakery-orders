@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { CatalogGateway } from '../features/catalog/application/catalogGateway'
-import { CustomerCatalog } from '../features/catalog/components/CustomerCatalog'
+import { CustomerOrderBuilder } from '../features/orders/components/CustomerOrderBuilder'
 import type { ManagerCatalogGateway } from '../features/catalog/application/managerCatalogGateway'
 import { ManagerCatalogAdministration } from '../features/catalog/components/ManagerCatalog'
 import type { ProductAvailabilityGateway } from '../features/catalog/application/productAvailabilityGateway'
@@ -45,7 +45,7 @@ export function ProtectedShell({
         <dt>Role</dt>
         <dd>{role}</dd>
       </dl>
-      {role === 'CUSTOMER' && <CustomerCatalog gateway={catalogGateway} />}
+      {role === 'CUSTOMER' && <CustomerOrderBuilder catalogGateway={catalogGateway} />}
       {role === 'KITCHEN' && (
         <KitchenCatalogAvailability
           catalogGateway={catalogGateway}
