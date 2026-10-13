@@ -12,11 +12,13 @@ import { useCreateOrderSubmission } from '../application/useCreateOrderSubmissio
 import type { OrderReviewDraft } from '../domain/orderReviewDraftSchema'
 import { CustomerOrderConfirmation } from './CustomerOrderConfirmation'
 import { CustomerOrderReview } from './CustomerOrderReview'
+import type { CustomerCancellationGateway } from '../application/customerCancellationGateway'
 
 interface CustomerOrderBuilderProps {
   catalogGateway: CatalogGateway
   createOrderGateway: CreateOrderGateway
   businessId: string
+  customerCancellationGateway: CustomerCancellationGateway
 }
 
 type OrderBuilderStep =
@@ -44,6 +46,7 @@ export function CustomerOrderBuilder({
   catalogGateway,
   createOrderGateway,
   businessId,
+  customerCancellationGateway,
 }: CustomerOrderBuilderProps) {
   const cart = useCart()
 
@@ -132,6 +135,9 @@ export function CustomerOrderBuilder({
     return (
       <CustomerOrderConfirmation
         orderId={confirmedOrderId}
+        customerCancellationGateway={
+          customerCancellationGateway
+        }
         onCreateAnotherOrder={
           handleCreateAnotherOrder
         }

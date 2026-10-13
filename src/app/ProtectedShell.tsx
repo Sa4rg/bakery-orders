@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { CatalogGateway } from '../features/catalog/application/catalogGateway'
 import type { CreateOrderGateway } from '../features/orders/application/createOrderGateway'
 import { CustomerOrderBuilder } from '../features/orders/components/CustomerOrderBuilder'
+import type { CustomerCancellationGateway } from '../features/orders/application/customerCancellationGateway'
 import type { ManagerCatalogGateway } from '../features/catalog/application/managerCatalogGateway'
 import { ManagerCatalogAdministration } from '../features/catalog/components/ManagerCatalog'
 import type { ProductAvailabilityGateway } from '../features/catalog/application/productAvailabilityGateway'
@@ -16,6 +17,7 @@ interface ProtectedShellProps {
   managerCatalogGateway: ManagerCatalogGateway
   productAvailabilityGateway: ProductAvailabilityGateway
   createOrderGateway: CreateOrderGateway
+  customerCancellationGateway: CustomerCancellationGateway
   onSignOut(): Promise<boolean>
 }
 
@@ -28,6 +30,7 @@ export function ProtectedShell({
   managerCatalogGateway,
   productAvailabilityGateway,
   createOrderGateway,
+  customerCancellationGateway,
   onSignOut,
 }: ProtectedShellProps) {
   const [signOutFailed, setSignOutFailed] = useState(false)
@@ -68,6 +71,7 @@ export function ProtectedShell({
             createOrderGateway={
               createOrderGateway
             }
+            customerCancellationGateway={customerCancellationGateway}
             businessId={customerBusinessId}
           />
         )

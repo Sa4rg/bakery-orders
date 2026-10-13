@@ -211,7 +211,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "create_order":
+            "cancel_customer_order":
+{ Args: { "p_order_id": string,"p_reason": string }; Returns: undefined
+                           },
+"create_order":
 { Args: { "p_business_id": string,"p_customer_notes": string,"p_idempotency_key": string,"p_items": Json,"p_requested_delivery_at": string }; Returns: string
                            },
 "set_product_availability":

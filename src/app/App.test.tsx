@@ -14,6 +14,7 @@ import { createFakeCatalogGateway } from '../features/catalog/testing/fakeCatalo
 import type { CreateOrderGateway } from '../features/orders/application/createOrderGateway'
 
 import App from './App'
+import type { CustomerCancellationGateway } from '../features/orders/application/customerCancellationGateway'
 
 const emptyCatalog: CustomerCatalog = { categories: [], products: [] }
 
@@ -34,6 +35,11 @@ const createOrderGateway: CreateOrderGateway = {
     '40000000-0000-4000-8000-000000000001',
 }
 
+const customerCancellationGateway:
+  CustomerCancellationGateway = {
+    cancelOrder: async () => undefined,
+}
+  
 function renderReadyApp(authGateway = createFakeAuthGateway()) {
   const catalogFake = createFakeCatalogGateway([emptyCatalog])
 
@@ -46,6 +52,8 @@ function renderReadyApp(authGateway = createFakeAuthGateway()) {
         managerCatalogGateway,
         productAvailabilityGateway,
         createOrderGateway,
+        customerCancellationGateway,
+
       }}
     />,
   )
@@ -209,6 +217,7 @@ describe('App', () => {
           managerCatalogGateway,
           productAvailabilityGateway: availabilityGateway,
           createOrderGateway,
+          customerCancellationGateway,
         }}
       />,
     )
@@ -305,6 +314,7 @@ describe('App', () => {
           managerCatalogGateway: managerGateway,
           productAvailabilityGateway: availabilityGateway,
           createOrderGateway,
+          customerCancellationGateway,
         }}
       />,
     )

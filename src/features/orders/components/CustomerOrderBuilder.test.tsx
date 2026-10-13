@@ -5,6 +5,7 @@ import type { CustomerCatalog as CustomerCatalogData } from '../../catalog/appli
 import type { CreateOrderGateway } from '../application/createOrderGateway'
 import { createFakeCatalogGateway } from '../../catalog/testing/fakeCatalogGateway'
 import { CustomerOrderBuilder } from './CustomerOrderBuilder'
+import type { CustomerCancellationGateway } from '../application/customerCancellationGateway'
 
 const sourdoughId =
   '30000000-0000-4000-8000-000000000001'
@@ -73,6 +74,11 @@ function renderOrderBuilder(
     .mockResolvedValue(
       persistedOrderId,
     ),
+  cancelOrder = vi
+    .fn<
+      CustomerCancellationGateway['cancelOrder']
+    >()
+    .mockResolvedValue(undefined),
 ) {
   const fake =
     createFakeCatalogGateway([
@@ -86,11 +92,15 @@ function renderOrderBuilder(
         createOrderGateway={{
           createOrder,
         }}
+        customerCancellationGateway={{
+          cancelOrder,
+        }}
         businessId={businessId}
       />,
     ),
     fake,
     createOrder,
+    cancelOrder,
   }
 }
 
@@ -626,5 +636,77 @@ describe('CustomerOrderBuilder', () => {
         name: 'Quantity for Pastry Mix',
       }),
     ).toHaveValue(0.25)
+  })
+
+  it('allows the CUSTOMER to cancel the just-created persisted Order', async () => {
+    const user = userEvent.setup()
+
+    const {
+      cancelOrder,
+    } = renderOrderBuilder()
+
+    await screen.findByRole('heading', {
+      name: 'Country Sourdough',
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add Country Sourdough to cart',
+      }),
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Review order',
+      }),
+    )
+
+    fireEvent.change(
+      screen.getByLabelText(
+        'Requested delivery date and time',
+      ),
+      {
+        target: {
+          value: '2026-10-18T08:15',
+        },
+      },
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Place order',
+      }),
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Order confirmed',
+      }),
+    ).toBeVisible()
+
+    await user.type(
+      screen.getByRole('textbox', {
+        name: 'Cancellation reason',
+      }),
+      'Changed customer requirements',
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Cancel order',
+      }),
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Order cancelled',
+      }),
+    ).toBeVisible()
+
+    expect(cancelOrder).toHaveBeenCalledWith({
+      orderId: persistedOrderId,
+      reason:
+        'Changed customer requirements',
+    })
   })
 })

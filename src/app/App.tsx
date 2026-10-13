@@ -36,6 +36,7 @@ export default function App({ bootstrap }: AppProps) {
                 managerCatalogGateway={bootstrap.managerCatalogGateway}
                 productAvailabilityGateway={bootstrap.productAvailabilityGateway}
                 createOrderGateway={bootstrap.createOrderGateway}
+                customerCancellationGateway={bootstrap.customerCancellationGateway}
                 onSignOut={signOut}
               />
             )}
