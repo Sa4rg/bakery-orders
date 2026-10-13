@@ -1,18 +1,21 @@
 import { useState } from 'react'
 import type { CatalogGateway } from '../features/catalog/application/catalogGateway'
+import type { CreateOrderGateway } from '../features/orders/application/createOrderGateway'
 import { CustomerOrderBuilder } from '../features/orders/components/CustomerOrderBuilder'
 import type { ManagerCatalogGateway } from '../features/catalog/application/managerCatalogGateway'
 import { ManagerCatalogAdministration } from '../features/catalog/components/ManagerCatalog'
 import type { ProductAvailabilityGateway } from '../features/catalog/application/productAvailabilityGateway'
 import { KitchenCatalogAvailability } from '../features/catalog/components/KitchenCatalogAvailability'
-import type { AppRole } from '../features/auth/domain/access'
+import type { AppRole, ActiveBusinessMembership } from '../features/auth/domain/access'
 
 interface ProtectedShellProps {
   displayName: string
   role: AppRole
+  memberships: ActiveBusinessMembership[]
   catalogGateway: CatalogGateway
   managerCatalogGateway: ManagerCatalogGateway
   productAvailabilityGateway: ProductAvailabilityGateway
+  createOrderGateway: CreateOrderGateway
   onSignOut(): Promise<boolean>
 }
 
@@ -20,9 +23,11 @@ interface ProtectedShellProps {
 export function ProtectedShell({
   displayName,
   role,
+  memberships,
   catalogGateway,
   managerCatalogGateway,
   productAvailabilityGateway,
+  createOrderGateway,
   onSignOut,
 }: ProtectedShellProps) {
   const [signOutFailed, setSignOutFailed] = useState(false)
@@ -35,6 +40,12 @@ export function ProtectedShell({
     }
   }
 
+  const customerBusinessId =
+    role === 'CUSTOMER' &&
+    memberships.length === 1
+      ? memberships[0]?.businessId ?? null
+      : null
+
   return (
     <section aria-labelledby="shell-heading">
       <h2 id="shell-heading">Your session</h2>
@@ -45,7 +56,22 @@ export function ProtectedShell({
         <dt>Role</dt>
         <dd>{role}</dd>
       </dl>
-      {role === 'CUSTOMER' && <CustomerOrderBuilder catalogGateway={catalogGateway} />}
+      {role === 'CUSTOMER' &&
+        (customerBusinessId === null ? (
+          <p role="alert">
+            Unable to determine your establishment for
+            ordering.
+          </p>
+        ) : (
+          <CustomerOrderBuilder
+            catalogGateway={catalogGateway}
+            createOrderGateway={
+              createOrderGateway
+            }
+            businessId={customerBusinessId}
+          />
+        )
+      )}
       {role === 'KITCHEN' && (
         <KitchenCatalogAvailability
           catalogGateway={catalogGateway}

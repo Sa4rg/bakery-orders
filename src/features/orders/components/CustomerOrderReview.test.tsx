@@ -40,6 +40,9 @@ describe('CustomerOrderReview', () => {
         items={items}
         initialDraft={initialDraft}
         onBack={() => undefined}
+        submitting={false}
+        submitFailed={false}
+        onSubmit={() => undefined}
       />,
     )
 
@@ -71,6 +74,9 @@ describe('CustomerOrderReview', () => {
         items={items}
         initialDraft={initialDraft}
         onBack={() => undefined}
+        submitting={false}
+        submitFailed={false}
+        onSubmit={() => undefined}
       />,
     )
 
@@ -96,6 +102,9 @@ describe('CustomerOrderReview', () => {
           customerNotes: '',
         }}
         onBack={() => undefined}
+        submitting={false}
+        submitFailed={false}
+        onSubmit={() => undefined}
       />,
     )
 
@@ -124,6 +133,9 @@ describe('CustomerOrderReview', () => {
           customerNotes: '',
         }}
         onBack={onBack}
+        submitting={false}
+        submitFailed={false}
+        onSubmit={() => undefined}
       />,
     )
 
@@ -158,19 +170,108 @@ describe('CustomerOrderReview', () => {
     })
   })
 
-  it('does not expose a persistence action before M3-009', () => {
+  it('submits a valid Review draft', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+
     render(
       <CustomerOrderReview
         items={items}
         initialDraft={initialDraft}
+        submitting={false}
+        submitFailed={false}
         onBack={() => undefined}
+        onSubmit={onSubmit}
+      />,
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Place order',
+      }),
+    )
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+
+    expect(
+      onSubmit.mock.calls[0]?.[0],
+    ).toEqual(initialDraft)
+  })
+
+  it('does not submit when delivery information is invalid', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+
+    render(
+      <CustomerOrderReview
+        items={items}
+        initialDraft={{
+          requestedDeliveryAtLocal: '',
+          customerNotes: '',
+        }}
+        submitting={false}
+        submitFailed={false}
+        onBack={() => undefined}
+        onSubmit={onSubmit}
+      />,
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Place order',
+      }),
+    )
+
+    expect(onSubmit).not.toHaveBeenCalled()
+
+    expect(
+      await screen.findByRole('alert'),
+    ).toHaveTextContent(
+      'Choose a valid delivery date and time.',
+    )
+  })
+
+  it('locks navigation and submission while persistence is pending', () => {
+    render(
+      <CustomerOrderReview
+        items={items}
+        initialDraft={initialDraft}
+        submitting
+        submitFailed={false}
+        onBack={() => undefined}
+        onSubmit={() => undefined}
       />,
     )
 
     expect(
-      screen.queryByRole('button', {
-        name: /place order|confirm order/i,
+      screen.getByRole('button', {
+        name: 'Placing order…',
       }),
-    ).toBeNull()
+    ).toBeDisabled()
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Back to cart',
+      }),
+    ).toBeDisabled()
+  })
+
+  it('shows a generic safe submission failure', () => {
+    render(
+      <CustomerOrderReview
+        items={items}
+        initialDraft={initialDraft}
+        submitting={false}
+        submitFailed
+        onBack={() => undefined}
+        onSubmit={() => undefined}
+      />,
+    )
+
+    expect(
+      screen.getByRole('alert'),
+    ).toHaveTextContent(
+      'Unable to place order. Please try again.',
+    )
   })
 })

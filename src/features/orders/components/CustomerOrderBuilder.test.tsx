@@ -1,9 +1,25 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { CustomerCatalog as CustomerCatalogData } from '../../catalog/application/catalogGateway'
+import type { CreateOrderGateway } from '../application/createOrderGateway'
 import { createFakeCatalogGateway } from '../../catalog/testing/fakeCatalogGateway'
 import { CustomerOrderBuilder } from './CustomerOrderBuilder'
+
+const sourdoughId =
+  '30000000-0000-4000-8000-000000000001'
+
+const pastryId =
+  '40000000-0000-4000-8000-000000000001'
+
+const unavailableCroissantId =
+  '50000000-0000-4000-8000-000000000001'
+
+const businessId =
+  '10000000-0000-4000-8000-000000000001'
+
+const persistedOrderId =
+  '90000000-0000-4000-8000-000000000001'
 
 const catalog: CustomerCatalogData = {
   categories: [
@@ -22,7 +38,7 @@ const catalog: CustomerCatalogData = {
   ],
   products: [
     {
-      id: 'sourdough',
+      id: sourdoughId,
       categoryId: 'bread',
       name: 'Country Sourdough',
       description: 'Naturally leavened loaf.',
@@ -31,7 +47,7 @@ const catalog: CustomerCatalogData = {
       available: true,
     },
     {
-      id: 'pastry-mix',
+      id: pastryId,
       categoryId: 'pastries',
       name: 'Pastry Mix',
       description: null,
@@ -40,7 +56,7 @@ const catalog: CustomerCatalogData = {
       available: true,
     },
     {
-      id: 'unavailable-croissant',
+      id: unavailableCroissantId,
       categoryId: 'pastries',
       name: 'Unavailable Croissant',
       description: null,
@@ -51,16 +67,30 @@ const catalog: CustomerCatalogData = {
   ],
 }
 
-function renderOrderBuilder() {
-  const fake = createFakeCatalogGateway([catalog])
+function renderOrderBuilder(
+  createOrder = vi
+    .fn<CreateOrderGateway['createOrder']>()
+    .mockResolvedValue(
+      persistedOrderId,
+    ),
+) {
+  const fake =
+    createFakeCatalogGateway([
+      catalog,
+    ])
 
   return {
     ...render(
       <CustomerOrderBuilder
         catalogGateway={fake.gateway}
+        createOrderGateway={{
+          createOrder,
+        }}
+        businessId={businessId}
       />,
     ),
     fake,
+    createOrder,
   }
 }
 
@@ -441,5 +471,160 @@ describe('CustomerOrderBuilder', () => {
         name: 'Optional notes',
       }),
     ).toHaveValue('Use side entrance.')
+  })
+
+  it('persists the reviewed Order and shows confirmation only after success', async () => {
+    const user = userEvent.setup()
+
+    const { createOrder } =
+      renderOrderBuilder()
+
+    await screen.findByRole('heading', {
+      name: 'Country Sourdough',
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add Country Sourdough to cart',
+      }),
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Review order',
+      }),
+    )
+
+    fireEvent.change(
+      screen.getByLabelText(
+        'Requested delivery date and time',
+      ),
+      {
+        target: {
+          value: '2026-10-18T08:15',
+        },
+      },
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Place order',
+      }),
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Order confirmed',
+      }),
+    ).toBeVisible()
+
+    expect(
+      screen.getByText(persistedOrderId),
+    ).toBeVisible()
+
+    expect(createOrder).toHaveBeenCalledTimes(1)
+
+    expect(
+      createOrder.mock.calls[0]?.[0],
+    ).toMatchObject({
+      businessId,
+      customerNotes: null,
+      items: [
+        {
+          productId: sourdoughId,
+          requestedQuantity: 1,
+        },
+      ],
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Create another order',
+      }),
+    )
+
+    expect(
+      screen.getByText(
+        'Your cart is empty.',
+      ),
+    ).toBeVisible()
+  })
+
+  it('preserves the reviewed Cart and exposes only a generic error when persistence fails', async () => {
+    const user = userEvent.setup()
+
+    const createOrder =
+      vi.fn<CreateOrderGateway['createOrder']>()
+
+    createOrder.mockRejectedValue(
+      new Error(
+        'sensitive provider error',
+      ),
+    )
+
+    renderOrderBuilder(createOrder)
+
+    await screen.findByRole('heading', {
+      name: 'Pastry Mix',
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add Pastry Mix to cart',
+      }),
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Review order',
+      }),
+    )
+
+    fireEvent.change(
+      screen.getByLabelText(
+        'Requested delivery date and time',
+      ),
+      {
+        target: {
+          value: '2026-10-18T08:15',
+        },
+      },
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Place order',
+      }),
+    )
+
+    expect(
+      await screen.findByRole('alert'),
+    ).toHaveTextContent(
+      'Unable to place order. Please try again.',
+    )
+
+    expect(
+      screen.queryByText(
+        /sensitive provider error/i,
+      ),
+    ).toBeNull()
+
+    expect(
+      screen.queryByRole('heading', {
+        name: 'Order confirmed',
+      }),
+    ).toBeNull()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Back to cart',
+      }),
+    )
+
+    expect(
+      screen.getByRole('spinbutton', {
+        name: 'Quantity for Pastry Mix',
+      }),
+    ).toHaveValue(0.25)
   })
 })

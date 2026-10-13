@@ -9,17 +9,26 @@ import {
 interface CustomerOrderReviewProps {
   items: CartItem[]
   initialDraft: OrderReviewDraft
+  submitting: boolean
+  submitFailed: boolean
   onBack(draft: OrderReviewDraft): void
+  onSubmit(
+    draft: OrderReviewDraft,
+  ): Promise<void> | void
 }
 
 export function CustomerOrderReview({
   items,
   initialDraft,
+  submitting,
+  submitFailed,
   onBack,
+  onSubmit,
 }: CustomerOrderReviewProps) {
   const {
     register,
     getValues,
+    handleSubmit,
     formState: { errors },
   } = useForm<OrderReviewDraft>({
     resolver: zodResolver(
@@ -56,9 +65,9 @@ export function CustomerOrderReview({
       </ul>
 
       <form
-        onSubmit={(event) =>
-          event.preventDefault()
-        }
+        onSubmit={handleSubmit((draft) =>
+          onSubmit(draft),
+        )}
       >
         <div>
           <label htmlFor="requested-delivery-at">
@@ -111,12 +120,28 @@ export function CustomerOrderReview({
 
         <button
           type="button"
+          disabled={submitting}
           onClick={() =>
             onBack(getValues())
           }
         >
           Back to cart
         </button>
+
+        <button
+          type="submit"
+          disabled={submitting}
+        >
+          {submitting
+            ? 'Placing order…'
+            : 'Place order'}
+        </button>
+
+        {submitFailed && (
+          <p role="alert">
+            Unable to place order. Please try again.
+          </p>
+        )}
       </form>
     </section>
   )
