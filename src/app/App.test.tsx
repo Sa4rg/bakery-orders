@@ -11,8 +11,10 @@ import type { CustomerCatalog } from '../features/catalog/application/catalogGat
 import type { ManagerCatalogGateway } from '../features/catalog/application/managerCatalogGateway'
 import type { ProductAvailabilityGateway } from '../features/catalog/application/productAvailabilityGateway'
 import { createFakeCatalogGateway } from '../features/catalog/testing/fakeCatalogGateway'
+import type { CreateOrderGateway } from '../features/orders/application/createOrderGateway'
 
 import App from './App'
+import type { CustomerCancellationGateway } from '../features/orders/application/customerCancellationGateway'
 
 const emptyCatalog: CustomerCatalog = { categories: [], products: [] }
 
@@ -28,6 +30,16 @@ const managerCatalogGateway: ManagerCatalogGateway = {
   updateProduct: async () => undefined,
 }
 
+const createOrderGateway: CreateOrderGateway = {
+  createOrder: async () =>
+    '40000000-0000-4000-8000-000000000001',
+}
+
+const customerCancellationGateway:
+  CustomerCancellationGateway = {
+    cancelOrder: async () => undefined,
+}
+  
 function renderReadyApp(authGateway = createFakeAuthGateway()) {
   const catalogFake = createFakeCatalogGateway([emptyCatalog])
 
@@ -39,6 +51,9 @@ function renderReadyApp(authGateway = createFakeAuthGateway()) {
         catalogGateway: catalogFake.gateway,
         managerCatalogGateway,
         productAvailabilityGateway,
+        createOrderGateway,
+        customerCancellationGateway,
+
       }}
     />,
   )
@@ -201,6 +216,8 @@ describe('App', () => {
           catalogGateway: catalogFake.gateway,
           managerCatalogGateway,
           productAvailabilityGateway: availabilityGateway,
+          createOrderGateway,
+          customerCancellationGateway,
         }}
       />,
     )
@@ -296,6 +313,8 @@ describe('App', () => {
           catalogGateway: catalogFake.gateway,
           managerCatalogGateway: managerGateway,
           productAvailabilityGateway: availabilityGateway,
+          createOrderGateway,
+          customerCancellationGateway,
         }}
       />,
     )

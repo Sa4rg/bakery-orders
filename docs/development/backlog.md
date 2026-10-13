@@ -334,6 +334,7 @@ US-CART-003
 US-ORDER-001
 US-ORDER-002
 US-ORDER-003
+US-ORDER-004
 ```
 
 ## M3-001 — Order Schema
@@ -410,6 +411,27 @@ Integrate cart with `create_order`.
 
 Show successful persisted order.
 
+## M3-010 — Customer Cancellation
+
+Implement CUSTOMER cancellation for RECEIVED orders through a controlled command.
+
+Require:
+
+- Mandatory cancellation reason.
+- Trusted actor and timestamp.
+- Cross-business authorization.
+- Lifecycle validation.
+- Cancellation audit event.
+- Preservation of the Order record.
+
+Expose immediate cancellation from the persisted Order confirmation.
+
+## M3-011 — Customer Ordering E2E & Closure
+
+Automate the real CUSTOMER ordering and cancellation workflows against local Supabase.
+
+Verify persisted Order state independently of temporary React state.
+
 ### M3 Acceptance Criteria
 
 CUSTOMER can:
@@ -422,6 +444,10 @@ Login
 → Confirm
 → Receive persisted order confirmation
 ```
+
+A CUSTOMER can cancel their authorized RECEIVED Order with a required reason.
+
+The cancellation remains persisted and auditable.
 
 At this milestone, a complete new Order exists securely in PostgreSQL.
 

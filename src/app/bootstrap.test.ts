@@ -38,6 +38,9 @@ describe('createAppBootstrap', () => {
       expect(typeof bootstrap.managerCatalogGateway.loadManagerCatalog).toBe(
         'function',
       )
+      expect(typeof bootstrap.createOrderGateway.createOrder).toBe(
+        'function',
+      )
     }
   })
 })

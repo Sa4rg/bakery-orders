@@ -280,7 +280,11 @@ select is(
     join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
       and p.prosecdef
-      and p.oid <> 'public.set_product_availability(uuid,boolean)'::regprocedure
+      and p.oid not in (
+        'public.set_product_availability(uuid,boolean)'::regprocedure,
+        'public.create_order(uuid,timestamptz,text,uuid,jsonb)'::regprocedure,
+        'public.cancel_customer_order(uuid,text)'::regprocedure
+      )
   ),
   0,
   'no unexpected SECURITY DEFINER function exists in the public schema'

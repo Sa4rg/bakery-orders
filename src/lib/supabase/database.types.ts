@@ -56,6 +56,117 @@ isOneToOne: false
                   Relationships: [
 
                   ]
+                },"order_events": {
+                  Row: {
+                    "actor_user_id": string | null,"event_type": string,"id": string,"metadata": NonNullable<Json>,"new_value": Json | null,"occurred_at": string,"order_id": string,"order_item_id": string | null,"previous_value": Json | null,"reason": string | null
+                  }
+                  Insert: {
+                    "actor_user_id"?: string | null,"event_type": string,"id"?: string,"metadata": NonNullable<Json>,"new_value"?: Json | null,"occurred_at"?: string,"order_id": string,"order_item_id"?: string | null,"previous_value"?: Json | null,"reason"?: string | null
+                  }
+                  Update: {
+                    "actor_user_id"?: string | null,"event_type"?: string,"id"?: string,"metadata"?: NonNullable<Json>,"new_value"?: Json | null,"occurred_at"?: string,"order_id"?: string,"order_item_id"?: string | null,"previous_value"?: Json | null,"reason"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "order_events_actor_user_id_fkey"
+      columns: ["actor_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_events_order_id_fkey"
+      columns: ["order_id"]
+isOneToOne: false
+      referencedRelation: "orders"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_events_order_item_id_fkey"
+      columns: ["order_item_id"]
+isOneToOne: false
+      referencedRelation: "order_items"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"order_items": {
+                  Row: {
+                    "created_at": string,"id": string,"order_id": string,"prepared_quantity": number,"product_id": string,"product_name_snapshot": string,"quantity_step_snapshot": number,"requested_quantity": number,"unavailable_quantity": number,"unit_code_snapshot": string,"updated_at": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"order_id": string,"prepared_quantity"?: number,"product_id": string,"product_name_snapshot": string,"quantity_step_snapshot": number,"requested_quantity": number,"unavailable_quantity"?: number,"unit_code_snapshot": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"order_id"?: string,"prepared_quantity"?: number,"product_id"?: string,"product_name_snapshot"?: string,"quantity_step_snapshot"?: number,"requested_quantity"?: number,"unavailable_quantity"?: number,"unit_code_snapshot"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "order_items_order_id_fkey"
+      columns: ["order_id"]
+isOneToOne: false
+      referencedRelation: "orders"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_items_product_id_fkey"
+      columns: ["product_id"]
+isOneToOne: false
+      referencedRelation: "products"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"orders": {
+                  Row: {
+                    "business_id": string,"cancellation_reason": string | null,"cancelled_at": string | null,"cancelled_by_user_id": string | null,"created_at": string,"created_by_user_id": string,"customer_notes": string | null,"delivered_at": string | null,"delivered_by_user_id": string | null,"delivery_address_snapshot": string | null,"dispatched_at": string | null,"dispatched_by_user_id": string | null,"id": string,"idempotency_key": string,"order_number": number,"ready_at": string | null,"ready_by_user_id": string | null,"requested_delivery_at": string,"started_at": string | null,"started_by_user_id": string | null,"status": Database["public"]['Enums']["order_status"],"updated_at": string
+                  }
+                  Insert: {
+                    "business_id": string,"cancellation_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by_user_id"?: string | null,"created_at"?: string,"created_by_user_id": string,"customer_notes"?: string | null,"delivered_at"?: string | null,"delivered_by_user_id"?: string | null,"delivery_address_snapshot"?: string | null,"dispatched_at"?: string | null,"dispatched_by_user_id"?: string | null,"id"?: string,"idempotency_key": string,"order_number"?: number,"ready_at"?: string | null,"ready_by_user_id"?: string | null,"requested_delivery_at": string,"started_at"?: string | null,"started_by_user_id"?: string | null,"status": Database["public"]['Enums']["order_status"],"updated_at"?: string
+                  }
+                  Update: {
+                    "business_id"?: string,"cancellation_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by_user_id"?: string | null,"created_at"?: string,"created_by_user_id"?: string,"customer_notes"?: string | null,"delivered_at"?: string | null,"delivered_by_user_id"?: string | null,"delivery_address_snapshot"?: string | null,"dispatched_at"?: string | null,"dispatched_by_user_id"?: string | null,"id"?: string,"idempotency_key"?: string,"order_number"?: number,"ready_at"?: string | null,"ready_by_user_id"?: string | null,"requested_delivery_at"?: string,"started_at"?: string | null,"started_by_user_id"?: string | null,"status"?: Database["public"]['Enums']["order_status"],"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "orders_business_id_fkey"
+      columns: ["business_id"]
+isOneToOne: false
+      referencedRelation: "businesses"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "orders_cancelled_by_user_id_fkey"
+      columns: ["cancelled_by_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "orders_created_by_user_id_fkey"
+      columns: ["created_by_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "orders_delivered_by_user_id_fkey"
+      columns: ["delivered_by_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "orders_dispatched_by_user_id_fkey"
+      columns: ["dispatched_by_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "orders_ready_by_user_id_fkey"
+      columns: ["ready_by_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "orders_started_by_user_id_fkey"
+      columns: ["started_by_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"products": {
                   Row: {
                     "active": boolean,"availability_updated_at": string | null,"availability_updated_by": string | null,"available": boolean,"category_id": string,"created_at": string,"description": string | null,"id": string,"image_path": string | null,"name": string,"quantity_step": number,"unit_code": string,"updated_at": string
@@ -100,12 +211,18 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "set_product_availability":
+            "cancel_customer_order":
+{ Args: { "p_order_id": string,"p_reason": string }; Returns: undefined
+                           },
+"create_order":
+{ Args: { "p_business_id": string,"p_customer_notes": string,"p_idempotency_key": string,"p_items": Json,"p_requested_delivery_at": string }; Returns: string
+                           },
+"set_product_availability":
 { Args: { "p_available": boolean,"p_product_id": string }; Returns: boolean
                            }
           }
           Enums: {
-            "app_role": "CUSTOMER"|"KITCHEN"|"MANAGER"
+            "app_role": "CUSTOMER"|"KITCHEN"|"MANAGER","order_status": "RECEIVED"|"IN_PROGRESS"|"READY"|"DISPATCHED"|"DELIVERED"|"CANCELLED"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -221,7 +338,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "app_role": ["CUSTOMER", "KITCHEN", "MANAGER"]
+            "app_role": ["CUSTOMER", "KITCHEN", "MANAGER"],"order_status": ["RECEIVED", "IN_PROGRESS", "READY", "DISPATCHED", "DELIVERED", "CANCELLED"]
           }
         }
 } as const

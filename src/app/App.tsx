@@ -27,13 +27,16 @@ export default function App({ bootstrap }: AppProps) {
       ) : (
         <AuthProvider gateway={bootstrap.authGateway}>
           <AuthGate>
-            {({ profile, signOut }) => (
+            {({ profile, memberships, signOut }) => (
               <ProtectedShell
                 displayName={profile.displayName}
                 role={profile.role}
+                memberships={memberships}
                 catalogGateway={bootstrap.catalogGateway}
                 managerCatalogGateway={bootstrap.managerCatalogGateway}
                 productAvailabilityGateway={bootstrap.productAvailabilityGateway}
+                createOrderGateway={bootstrap.createOrderGateway}
+                customerCancellationGateway={bootstrap.customerCancellationGateway}
                 onSignOut={signOut}
               />
             )}
