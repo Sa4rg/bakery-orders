@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { CustomerCatalog as CustomerCatalogData } from '../../catalog/application/catalogGateway'
@@ -275,5 +275,171 @@ describe('CustomerOrderBuilder', () => {
     expect(
       screen.getByText('Your cart is empty.'),
     ).toBeVisible()
+  })
+
+  it('does not allow an empty Cart to enter Review Order', async () => {
+    renderOrderBuilder()
+
+    await screen.findByRole('heading', {
+      name: 'Country Sourdough',
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Review order',
+      }),
+    ).toBeDisabled()
+  })
+
+  it('moves from the editable Cart to the Review Order screen', async () => {
+    const user = userEvent.setup()
+
+    renderOrderBuilder()
+
+    await screen.findByRole('heading', {
+      name: 'Pastry Mix',
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add Pastry Mix to cart',
+      }),
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Review order',
+      }),
+    )
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Review order',
+      }),
+    ).toBeVisible()
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Pastry Mix',
+      }),
+    ).toBeVisible()
+
+    expect(screen.getByText('0.25 KG')).toBeVisible()
+
+    expect(
+      screen.queryByRole('heading', {
+        name: 'Catalog',
+      }),
+    ).toBeNull()
+  })
+
+  it('returns to editing without losing Cart quantities', async () => {
+    const user = userEvent.setup()
+
+    renderOrderBuilder()
+
+    await screen.findByRole('heading', {
+      name: 'Pastry Mix',
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add Pastry Mix to cart',
+      }),
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Increase Pastry Mix quantity',
+      }),
+    )
+
+    expect(
+      screen.getByRole('spinbutton', {
+        name: 'Quantity for Pastry Mix',
+      }),
+    ).toHaveValue(0.5)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Review order',
+      }),
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Back to cart',
+      }),
+    )
+
+    expect(
+      screen.getByRole('spinbutton', {
+        name: 'Quantity for Pastry Mix',
+      }),
+    ).toHaveValue(0.5)
+  })
+
+  it('preserves delivery details when returning to the Cart and reviewing again', async () => {
+    const user = userEvent.setup()
+
+    renderOrderBuilder()
+
+    await screen.findByRole('heading', {
+      name: 'Country Sourdough',
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add Country Sourdough to cart',
+      }),
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Review order',
+      }),
+    )
+
+    fireEvent.change(
+      screen.getByLabelText(
+        'Requested delivery date and time',
+      ),
+      {
+        target: {
+          value: '2026-10-18T08:15',
+        },
+      },
+    )
+
+    await user.type(
+      screen.getByRole('textbox', {
+        name: 'Optional notes',
+      }),
+      'Use side entrance.',
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Back to cart',
+      }),
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Review order',
+      }),
+    )
+
+    expect(
+      screen.getByLabelText(
+        'Requested delivery date and time',
+      ),
+    ).toHaveValue('2026-10-18T08:15')
+
+    expect(
+      screen.getByRole('textbox', {
+        name: 'Optional notes',
+      }),
+    ).toHaveValue('Use side entrance.')
   })
 })

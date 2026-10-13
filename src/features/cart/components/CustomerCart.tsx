@@ -17,6 +17,7 @@ interface CustomerCartProps {
   ): void
   onRemove(productId: string): void
   onClear(): void
+  onReview?(): void
 }
 
 interface CartQuantityInputProps {
@@ -114,6 +115,7 @@ export function CustomerCart({
   onChangeQuantity,
   onRemove,
   onClear,
+  onReview,
 }: CustomerCartProps) {
   return (
     <section aria-labelledby="cart-heading">
@@ -187,6 +189,16 @@ export function CustomerCart({
             Clear cart
           </button>
         </>
+      )}
+
+      {onReview !== undefined && (
+        <button
+          type="button"
+          disabled={items.length === 0}
+          onClick={onReview}
+        >
+          Review order
+        </button>
       )}
     </section>
   )
