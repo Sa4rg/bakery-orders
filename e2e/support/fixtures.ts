@@ -33,6 +33,18 @@ export const productAvailabilityFixture = {
   productName: 'E2E Product Availability Product',
 } as const
 
+/** Reserved catalog rows used only by the CUSTOMER ordering E2E. */
+export const customerOrderingFixture = {
+  categoryId:
+    '00000000-0000-4000-8000-000000000e21',
+  productId:
+    '00000000-0000-4000-8000-000000000e22',
+  categoryName:
+    'E2E Customer Ordering Category',
+  productName:
+    'E2E Customer Ordering Product',
+} as const
+
 export type FixtureKey =
   | 'customerA'
   | 'customerB'
@@ -187,8 +199,93 @@ async function findFixtureUserIds(admin: LocalAdminClient): Promise<string[]> {
   }
 }
 
+async function removeFixtureOrders(
+  admin: LocalAdminClient,
+): Promise<void> {
+  const businessIds = Object.values(
+    fixtureBusinesses,
+  ).map(({ id }) => id)
+
+  const ordersResult = await admin
+    .from('orders')
+    .select('id')
+    .in('business_id', businessIds)
+
+  if (ordersResult.error) {
+    fail('find fixture Orders')
+  }
+
+  const orderIds = ordersResult.data.map(
+    ({ id }) => id,
+  )
+
+  if (orderIds.length === 0) {
+    return
+  }
+
+  /*
+   * Operational tables intentionally use restrictive historical
+   * relationships. E2E teardown is trusted test infrastructure,
+   * so remove exact fixture-owned data explicitly from children
+   * to parent rather than weakening database integrity.
+   */
+  const events = await admin
+    .from('order_events')
+    .delete()
+    .in('order_id', orderIds)
+
+  if (events.error) {
+    fail('remove fixture Order events')
+  }
+
+  const items = await admin
+    .from('order_items')
+    .delete()
+    .in('order_id', orderIds)
+
+  if (items.error) {
+    fail('remove fixture Order items')
+  }
+
+  const orders = await admin
+    .from('orders')
+    .delete()
+    .in('id', orderIds)
+
+  if (orders.error) {
+    fail('remove fixture Orders')
+  }
+}
+
 /** Removes only the exact reserved E2E rows. Idempotent. */
 export async function removeFixtures(admin: LocalAdminClient): Promise<void> {
+  await removeFixtureOrders(admin)
+
+  const orderingProduct = await admin
+    .from('products')
+    .delete()
+    .eq(
+      'id',
+      customerOrderingFixture.productId,
+    )
+
+  if (orderingProduct.error) {
+    fail('remove the Customer ordering E2E Product')
+  }
+
+  const orderingCategory = await admin
+    .from('categories')
+    .delete()
+    .eq(
+      'id',
+      customerOrderingFixture.categoryId,
+    )
+
+  if (orderingCategory.error) {
+    fail(
+      'remove the Customer ordering E2E Category',
+    )
+  }
   const availabilityProduct = await admin
     .from('products')
     .delete()
@@ -282,6 +379,44 @@ export async function provisionFixtures(
   password: string,
 ): Promise<void> {
   await removeFixtures(admin)
+
+  const orderingCategory = await admin
+    .from('categories')
+    .insert({
+      id: customerOrderingFixture.categoryId,
+      name: customerOrderingFixture.categoryName,
+      description:
+        'Reserved CUSTOMER ordering E2E data.',
+      active: true,
+      display_order: 102,
+    })
+
+  if (orderingCategory.error) {
+    fail(
+      'create the Customer ordering E2E Category',
+    )
+  }
+
+  const orderingProduct = await admin
+    .from('products')
+    .insert({
+      id: customerOrderingFixture.productId,
+      category_id:
+        customerOrderingFixture.categoryId,
+      name: customerOrderingFixture.productName,
+      description:
+        'Reserved CUSTOMER ordering E2E data.',
+      unit_code: 'UNIT',
+      quantity_step: 1,
+      active: true,
+      available: true,
+    })
+
+  if (orderingProduct.error) {
+    fail(
+      'create the Customer ordering E2E Product',
+    )
+  }
 
   const availabilityCategory = await admin.from('categories').insert({
     id: productAvailabilityFixture.categoryId,
