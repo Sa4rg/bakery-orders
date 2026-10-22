@@ -217,6 +217,11 @@ isOneToOne: false
 "create_order":
 { Args: { "p_business_id": string,"p_customer_notes": string,"p_idempotency_key": string,"p_items": Json,"p_requested_delivery_at": string }; Returns: string
                            },
+"get_kitchen_order_business_names":
+{ Args: { "p_business_ids": (string)[] }; Returns: {
+              "id": string,"name": string
+            }[]
+                           },
 "set_product_availability":
 { Args: { "p_available": boolean,"p_product_id": string }; Returns: boolean
                            }

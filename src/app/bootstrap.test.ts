@@ -41,6 +41,12 @@ describe('createAppBootstrap', () => {
       expect(typeof bootstrap.createOrderGateway.createOrder).toBe(
         'function',
       )
+      expect(typeof bootstrap.kitchenOrderQueryGateway.loadProductionQueue).toBe(
+        'function',
+      )
+      expect(typeof bootstrap.kitchenOrderQueryGateway.loadProductionOrder).toBe(
+        'function',
+      )
     }
   })
 })
