@@ -17,6 +17,10 @@ import type { CustomerCancellationGateway } from '../features/orders/application
 import { createSupabaseCustomerCancellationGateway } from '../features/orders/data/createSupabaseCustomerCancellationGateway'
 import type { KitchenOrderQueryGateway } from '../features/orders/application/kitchenOrderQueryGateway'
 import { createSupabaseKitchenOrderQueryGateway } from '../features/orders/data/createSupabaseKitchenOrderQueryGateway'
+import type { KitchenOrderQueryFilters } from '../features/orders/application/kitchenOrderQueryGateway'
+import type { KitchenQueueSynchronizer } from '../features/orders/application/kitchenQueueSynchronization'
+import { createKitchenQueueSynchronizer } from '../features/orders/application/kitchenQueueSynchronization'
+import { createSupabaseKitchenProductionRealtimeGateway } from '../features/orders/data/createSupabaseKitchenProductionRealtimeGateway'
 
 export type AppBootstrap =
   | {
@@ -28,6 +32,7 @@ export type AppBootstrap =
       createOrderGateway: CreateOrderGateway
       customerCancellationGateway: CustomerCancellationGateway
       kitchenOrderQueryGateway: KitchenOrderQueryGateway
+      createKitchenQueueSynchronizer: (filters?: KitchenOrderQueryFilters) => KitchenQueueSynchronizer
     }
   | { status: 'misconfigured'; variables: SupabaseConfigVariable[] }
 
@@ -43,6 +48,8 @@ export function createAppBootstrap(env: Record<string, unknown>): AppBootstrap {
   }
 
   const client = createSupabaseBrowserClient(config)
+  const kitchenOrderQueryGateway = createSupabaseKitchenOrderQueryGateway(client)
+  const kitchenRealtimeGateway = createSupabaseKitchenProductionRealtimeGateway(client)
 
   return {
     status: 'ready',
@@ -52,6 +59,11 @@ export function createAppBootstrap(env: Record<string, unknown>): AppBootstrap {
     managerCatalogGateway: createSupabaseManagerCatalogGateway(client),
     createOrderGateway: createSupabaseCreateOrderGateway(client),
     customerCancellationGateway: createSupabaseCustomerCancellationGateway(client),
-    kitchenOrderQueryGateway: createSupabaseKitchenOrderQueryGateway(client),
+    kitchenOrderQueryGateway,
+    createKitchenQueueSynchronizer: (filters) => createKitchenQueueSynchronizer({
+      queryGateway: kitchenOrderQueryGateway,
+      realtimeGateway: kitchenRealtimeGateway,
+      filters,
+    }),
   }
 }

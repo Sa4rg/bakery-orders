@@ -47,6 +47,9 @@ describe('createAppBootstrap', () => {
       expect(typeof bootstrap.kitchenOrderQueryGateway.loadProductionOrder).toBe(
         'function',
       )
+      const synchronizer = bootstrap.createKitchenQueueSynchronizer()
+      expect(typeof synchronizer.start).toBe('function')
+      expect(typeof synchronizer.refresh).toBe('function')
     }
   })
 })

@@ -63,6 +63,10 @@ function renderReadyApp(authGateway = createFakeAuthGateway()) {
         createOrderGateway,
         customerCancellationGateway,
         kitchenOrderQueryGateway,
+        createKitchenQueueSynchronizer: () => ({
+          start: () => () => undefined,
+          refresh: () => undefined,
+        }),
       }}
     />,
   )
@@ -228,6 +232,10 @@ describe('App', () => {
           createOrderGateway,
           customerCancellationGateway,
           kitchenOrderQueryGateway,
+          createKitchenQueueSynchronizer: () => ({
+            start: () => () => undefined,
+            refresh: () => undefined,
+          }),
         }}
       />,
     )
@@ -326,6 +334,10 @@ describe('App', () => {
           createOrderGateway,
           customerCancellationGateway,
           kitchenOrderQueryGateway,
+          createKitchenQueueSynchronizer: () => ({
+            start: () => () => undefined,
+            refresh: () => undefined,
+          }),
         }}
       />,
     )
