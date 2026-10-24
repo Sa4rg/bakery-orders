@@ -110,7 +110,10 @@ test('KITCHEN receives persisted changes, refetches, enforces RLS and recovers m
   try {
     // Observe real order_items INSERT separately: the application adapter
     // intentionally hides payloads, so its tests cannot identify their table.
-    let kitchenItemProbeReady = false
+    let kitchenItemProbeJoined = false
+    let kitchenItemProbePgReady = false
+    let kitchenItemProbeStatus = 'connecting'
+    let kitchenItemProbeSystem = 'pending'
     kitchenItemProbe = kitchen
       .channel(`e2e-kitchen-item-probe-${randomUUID()}`)
       .on('postgres_changes', {
@@ -119,14 +122,24 @@ test('KITCHEN receives persisted changes, refetches, enforces RLS and recovers m
         const id = payload.new.order_id
         if (typeof id === 'string') kitchenItemOrderIds.add(id)
       })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') kitchenItemProbeReady = true
+      .on('system', {}, (payload) => {
+        if (payload.extension !== 'postgres_changes') return
+        kitchenItemProbeSystem = `${payload.status}: ${payload.message ?? ''}`
+        kitchenItemProbePgReady = payload.status === 'ok'
+      })
+      .subscribe((status, error) => {
+        kitchenItemProbeStatus = error ? `${status}: ${error.message}` : status
+        kitchenItemProbeJoined = status === 'SUBSCRIBED'
+        if (status !== 'SUBSCRIBED') kitchenItemProbePgReady = false
       })
 
     // CUSTOMER B has SELECT only for its own Business, never Business A.
     // Track both tables; this is a bounded observational check in addition
     // to the authoritative PostgREST/RLS assertions below.
-    let unrelatedObserverReady = false
+    let unrelatedObserverJoined = false
+    let unrelatedObserverPgReady = false
+    let unrelatedObserverStatus = 'connecting'
+    let unrelatedObserverSystem = 'pending'
     unrelatedObserver = unrelatedCustomer
       .channel(`e2e-unrelated-customer-${randomUUID()}`)
       .on('postgres_changes', {
@@ -143,17 +156,39 @@ test('KITCHEN receives persisted changes, refetches, enforces RLS and recovers m
         const id = payload.new.order_id
         if (typeof id === 'string') unauthorizedOrderIds.add(id)
       })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') unrelatedObserverReady = true
+      .on('system', {}, (payload) => {
+        if (payload.extension !== 'postgres_changes') return
+        unrelatedObserverSystem = `${payload.status}: ${payload.message ?? ''}`
+        unrelatedObserverPgReady = payload.status === 'ok'
+      })
+      .subscribe((status, error) => {
+        unrelatedObserverStatus = error ? `${status}: ${error.message}` : status
+        unrelatedObserverJoined = status === 'SUBSCRIBED'
+        if (status !== 'SUBSCRIBED') unrelatedObserverPgReady = false
       })
 
     stopSynchronization = synchronizer.start((state) => states.push(state))
 
-    // Wait for channel join AND the initial authoritative read before writing.
-    // Otherwise the initial query could race the first INSERT and give a
-    // false positive even if Realtime never delivered a signal.
-    await expect.poll(() => kitchenItemProbeReady, { timeout: 20_000 }).toBe(true)
-    await expect.poll(() => unrelatedObserverReady, { timeout: 20_000 }).toBe(true)
+    // SUBSCRIBED confirms the channel join, not that Postgres Changes is
+    // listening. Wait for its system acknowledgment before issuing a write.
+    // Returning all statuses from poll makes a future failure diagnosable.
+    await expect.poll(() => ({
+      kitchenJoined: kitchenItemProbeJoined,
+      kitchenPostgresReady: kitchenItemProbePgReady,
+      kitchenStatus: kitchenItemProbeStatus,
+      kitchenSystem: kitchenItemProbeSystem,
+      unrelatedJoined: unrelatedObserverJoined,
+      unrelatedPostgresReady: unrelatedObserverPgReady,
+      unrelatedStatus: unrelatedObserverStatus,
+      unrelatedSystem: unrelatedObserverSystem,
+    }), { timeout: 30_000 }).toMatchObject({
+      kitchenJoined: true,
+      kitchenPostgresReady: true,
+      unrelatedJoined: true,
+      unrelatedPostgresReady: true,
+    })
+    // Also wait for the initial authoritative read. Otherwise an initial
+    // SELECT racing the INSERT could look like a successful invalidation.
     await expect.poll(() => states.at(-1), { timeout: 30_000 }).toMatchObject({
       connection: 'connected', stale: false, loading: false,
     })
@@ -163,9 +198,17 @@ test('KITCHEN receives persisted changes, refetches, enforces RLS and recovers m
     // Trusted CUSTOMER command: inserts an Order and an OrderItem atomically.
     const firstOrderId = await createFixtureOrder(customer)
 
-    await expect.poll(() => kitchenItemOrderIds.has(firstOrderId), {
-      timeout: 30_000,
-    }).toBe(true)
+    // Distinguish an absent Realtime event from missing persisted/RLS-visible data.
+    const persistedItems = await kitchen.from('order_items')
+      .select('id').eq('order_id', firstOrderId)
+    expect(persistedItems.error).toBeNull()
+    expect(persistedItems.data).toHaveLength(1)
+
+    await expect.poll(() => ({
+      itemEventObserved: kitchenItemOrderIds.has(firstOrderId),
+      channelStatus: kitchenItemProbeStatus,
+      postgresStatus: kitchenItemProbeSystem,
+    }), { timeout: 30_000 }).toMatchObject({ itemEventObserved: true })
     await expect.poll(() => invalidations, { timeout: 30_000 }).toBeGreaterThan(0)
     await expect.poll(() => {
       const latest = states.at(-1)
