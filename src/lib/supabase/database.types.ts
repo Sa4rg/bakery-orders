@@ -224,6 +224,9 @@ isOneToOne: false
                            },
 "set_product_availability":
 { Args: { "p_available": boolean,"p_product_id": string }; Returns: boolean
+                           },
+"start_order":
+{ Args: { "p_order_id": string }; Returns: undefined
                            }
           }
           Enums: {

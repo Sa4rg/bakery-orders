@@ -21,6 +21,8 @@ import type { KitchenOrderQueryFilters } from '../features/orders/application/ki
 import type { KitchenQueueSynchronizer } from '../features/orders/application/kitchenQueueSynchronization'
 import { createKitchenQueueSynchronizer } from '../features/orders/application/kitchenQueueSynchronization'
 import { createSupabaseKitchenProductionRealtimeGateway } from '../features/orders/data/createSupabaseKitchenProductionRealtimeGateway'
+import type { KitchenProductionCommandGateway } from '../features/orders/application/kitchenProductionCommandGateway'
+import { createSupabaseKitchenProductionCommandGateway } from '../features/orders/data/createSupabaseKitchenProductionCommandGateway'
 
 export type AppBootstrap =
   | {
@@ -32,6 +34,7 @@ export type AppBootstrap =
       createOrderGateway: CreateOrderGateway
       customerCancellationGateway: CustomerCancellationGateway
       kitchenOrderQueryGateway: KitchenOrderQueryGateway
+      kitchenProductionCommandGateway: KitchenProductionCommandGateway
       createKitchenQueueSynchronizer: (filters?: KitchenOrderQueryFilters) => KitchenQueueSynchronizer
     }
   | { status: 'misconfigured'; variables: SupabaseConfigVariable[] }
@@ -60,6 +63,7 @@ export function createAppBootstrap(env: Record<string, unknown>): AppBootstrap {
     createOrderGateway: createSupabaseCreateOrderGateway(client),
     customerCancellationGateway: createSupabaseCustomerCancellationGateway(client),
     kitchenOrderQueryGateway,
+    kitchenProductionCommandGateway: createSupabaseKitchenProductionCommandGateway(client),
     createKitchenQueueSynchronizer: (filters) => createKitchenQueueSynchronizer({
       queryGateway: kitchenOrderQueryGateway,
       realtimeGateway: kitchenRealtimeGateway,

@@ -284,7 +284,8 @@ select is(
         'public.set_product_availability(uuid,boolean)'::regprocedure,
         'public.create_order(uuid,timestamptz,text,uuid,jsonb)'::regprocedure,
         'public.cancel_customer_order(uuid,text)'::regprocedure,
-        'public.get_kitchen_order_business_names(uuid[])'::regprocedure
+        'public.get_kitchen_order_business_names(uuid[])'::regprocedure,
+        'public.start_order(uuid)'::regprocedure
       )
   ),
   0,

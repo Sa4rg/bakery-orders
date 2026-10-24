@@ -16,6 +16,7 @@ import type { CreateOrderGateway } from '../features/orders/application/createOr
 import App from './App'
 import type { CustomerCancellationGateway } from '../features/orders/application/customerCancellationGateway'
 import type { KitchenOrderQueryGateway } from '../features/orders/application/kitchenOrderQueryGateway'
+import type { KitchenProductionCommandGateway } from '../features/orders/application/kitchenProductionCommandGateway'
 
 const emptyCatalog: CustomerCatalog = { categories: [], products: [] }
 
@@ -41,6 +42,10 @@ const customerCancellationGateway:
     cancelOrder: async () => undefined,
 }
 
+const kitchenProductionCommandGateway: KitchenProductionCommandGateway = {
+  startOrder: async () => undefined,
+}
+
 const kitchenOrderQueryGateway: KitchenOrderQueryGateway = {
   loadProductionQueue: async () => ({
     orders: [],
@@ -63,6 +68,7 @@ function renderReadyApp(authGateway = createFakeAuthGateway()) {
         createOrderGateway,
         customerCancellationGateway,
         kitchenOrderQueryGateway,
+        kitchenProductionCommandGateway,
         createKitchenQueueSynchronizer: () => ({
           start: () => () => undefined,
           refresh: () => undefined,
@@ -232,6 +238,7 @@ describe('App', () => {
           createOrderGateway,
           customerCancellationGateway,
           kitchenOrderQueryGateway,
+          kitchenProductionCommandGateway,
           createKitchenQueueSynchronizer: () => ({
             start: () => () => undefined,
             refresh: () => undefined,
@@ -334,6 +341,7 @@ describe('App', () => {
           createOrderGateway,
           customerCancellationGateway,
           kitchenOrderQueryGateway,
+          kitchenProductionCommandGateway,
           createKitchenQueueSynchronizer: () => ({
             start: () => () => undefined,
             refresh: () => undefined,
