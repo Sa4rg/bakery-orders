@@ -225,6 +225,9 @@ isOneToOne: false
 "record_prepared_quantity":
 { Args: { "p_order_item_id": string,"p_quantity": number }; Returns: undefined
                            },
+"record_unavailable_quantity":
+{ Args: { "p_order_item_id": string,"p_quantity": number,"p_reason": string }; Returns: undefined
+                           },
 "set_product_availability":
 { Args: { "p_available": boolean,"p_product_id": string }; Returns: boolean
                            },

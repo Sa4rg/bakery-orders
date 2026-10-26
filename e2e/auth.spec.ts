@@ -24,7 +24,7 @@ async function expectProtectedShell(
 
   await expect(shell).toBeVisible()
   await expect(shell.getByText('Application foundation ready.')).toBeVisible()
-  await expect(shell.getByText(fixtureIdentities[key].displayName)).toBeVisible()
+  await expect(shell.getByText(fixtureIdentities[key].displayName, { exact: true })).toBeVisible()
   await expect(shell.getByText(role, { exact: true })).toBeVisible()
 }
 

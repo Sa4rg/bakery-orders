@@ -9,6 +9,13 @@ export interface KitchenProductionCommandGateway {
     orderItemId: string,
     quantityThousandths: QuantityThousandths,
   ): Promise<void>
+
+  /** Positive unavailable DELTA, with a mandatory reason for this operation. */
+  recordUnavailableQuantity(
+    orderItemId: string,
+    quantityThousandths: QuantityThousandths,
+    reason: string,
+  ): Promise<void>
 }
 
 /** Safe start-order failure; provider details never escape the adapter. */
@@ -37,5 +44,21 @@ export class KitchenPreparedQuantityCommandError extends Error {
   constructor() {
     super('Unable to record prepared quantity.')
     this.name = 'KitchenPreparedQuantityCommandError'
+  }
+}
+
+/** Invalid item id, positive thousandths delta or missing reason. */
+export class KitchenUnavailableQuantityValidationError extends Error {
+  constructor() {
+    super('Unavailable quantity input is invalid.')
+    this.name = 'KitchenUnavailableQuantityValidationError'
+  }
+}
+
+/** Safe RPC failure; never include provider details or sensitive reason text. */
+export class KitchenUnavailableQuantityCommandError extends Error {
+  constructor() {
+    super('Unable to record unavailable quantity.')
+    this.name = 'KitchenUnavailableQuantityCommandError'
   }
 }

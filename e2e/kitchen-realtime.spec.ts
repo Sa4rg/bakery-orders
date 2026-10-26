@@ -291,9 +291,9 @@ test('KITCHEN receives persisted changes, refetches, enforces RLS and recovers m
     if (kitchenItemProbe) await kitchen.removeChannel(kitchenItemProbe)
     if (unrelatedObserver) await unrelatedCustomer.removeChannel(unrelatedObserver)
     await Promise.allSettled([
-      customer.auth.signOut(),
-      kitchen.auth.signOut(),
-      unrelatedCustomer.auth.signOut(),
+      customer.auth.signOut({ scope: 'local' }),
+      kitchen.auth.signOut({ scope: 'local' }),
+      unrelatedCustomer.auth.signOut({ scope: 'local' }),
     ])
   }
 })

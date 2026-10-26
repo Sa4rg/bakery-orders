@@ -19,14 +19,17 @@ import { getLocalSupabasePublicConfig } from './support/localSupabase.ts'
 type Actor = 'customerA' | 'kitchen' | 'manager'
 
 /** JWT-authenticated clients only. Privileged fixture provisioning stays in global setup. */
-async function signedInClient(actor: Actor): Promise<SupabaseBrowserClient> {
+async function signedInClient(actor: Actor): Promise<{ client: SupabaseBrowserClient; userId: string }> {
   const { url, publishableKey } = getLocalSupabasePublicConfig()
   const client = createClient<Database>(url, publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   })
-  const { error } = await client.auth.signInWithPassword(fixtureCredentials(actor))
+  const { data, error } = await client.auth.signInWithPassword(fixtureCredentials(actor))
   expect(error, `Unable to sign in as ${actor}`).toBeNull()
-  return client
+  if (!data.user?.id) {
+    throw new Error(`Sign-in returned no user for ${actor}`)
+  }
+  return { client, userId: data.user.id }
 }
 
 async function createFixtureOrder(customer: SupabaseBrowserClient): Promise<string> {
@@ -51,9 +54,9 @@ async function createFixtureOrder(customer: SupabaseBrowserClient): Promise<stri
 test('KITCHEN records exact prepared deltas, audits each operation and rejects forbidden writes', async () => {
   test.setTimeout(90_000)
 
-  const customer = await signedInClient('customerA')
-  const kitchen = await signedInClient('kitchen')
-  const manager = await signedInClient('manager')
+  const { client: customer } = await signedInClient('customerA')
+  const { client: kitchen, userId: kitchenId } = await signedInClient('kitchen')
+  const { client: manager } = await signedInClient('manager')
 
   try {
     const orderId = await createFixtureOrder(customer)
@@ -88,10 +91,6 @@ test('KITCHEN records exact prepared deltas, audits each operation and rejects f
 
     await command.startOrder(orderId)
 
-    const { data: userData, error: userError } = await kitchen.auth.getUser()
-    expect(userError).toBeNull()
-    const kitchenId = userData.user?.id
-    expect(kitchenId).toBeTruthy()
 
     // Zero, fractional thousandths and item ID failures stop at the adapter boundary.
     await expect(command.recordPreparedQuantity(item.id, 0))
@@ -192,9 +191,9 @@ test('KITCHEN records exact prepared deltas, audits each operation and rejects f
     expect(finalEvents.data).toHaveLength(2)
   } finally {
     await Promise.allSettled([
-      customer.auth.signOut(),
-      kitchen.auth.signOut(),
-      manager.auth.signOut(),
+      customer.auth.signOut({ scope: 'local' }),
+      kitchen.auth.signOut({ scope: 'local' }),
+      manager.auth.signOut({ scope: 'local' }),
     ])
   }
 })

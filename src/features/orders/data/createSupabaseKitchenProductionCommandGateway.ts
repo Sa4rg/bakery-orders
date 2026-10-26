@@ -5,6 +5,8 @@ import {
   KitchenPreparedQuantityValidationError,
   KitchenProductionCommandError,
   KitchenProductionValidationError,
+  KitchenUnavailableQuantityCommandError,
+  KitchenUnavailableQuantityValidationError,
   type KitchenProductionCommandGateway,
 } from '../application/kitchenProductionCommandGateway'
 
@@ -18,7 +20,7 @@ const maxQuantityThousandths = 999_999_999_999
  * A browser number is only accepted as an integer count of thousandths.
  * No floating-point addition is performed: PostgreSQL owns all totals.
  */
-function preparedQuantityRpcNumber(quantityThousandths: number): number | null {
+function quantityRpcNumber(quantityThousandths: number): number | null {
   if (
     !Number.isSafeInteger(quantityThousandths)
     || quantityThousandths <= 0
@@ -61,7 +63,7 @@ export function createSupabaseKitchenProductionCommandGateway(
 
     async recordPreparedQuantity(orderItemId, quantityThousandths) {
       const parsedItemId = orderItemIdSchema.safeParse(orderItemId)
-      const quantity = preparedQuantityRpcNumber(quantityThousandths)
+      const quantity = quantityRpcNumber(quantityThousandths)
       if (!parsedItemId.success || quantity === null) {
         throw new KitchenPreparedQuantityValidationError()
       }
@@ -76,6 +78,29 @@ export function createSupabaseKitchenProductionCommandGateway(
         }
       } catch {
         throw new KitchenPreparedQuantityCommandError()
+      }
+    },
+
+    async recordUnavailableQuantity(orderItemId, quantityThousandths, reason) {
+      const parsedItemId = orderItemIdSchema.safeParse(orderItemId)
+      const quantity = quantityRpcNumber(quantityThousandths)
+      // The backend performs the same check; this one prevents empty submissions.
+      const normalizedReason = typeof reason === 'string' ? reason.trim() : ''
+      if (!parsedItemId.success || quantity === null || normalizedReason.length === 0) {
+        throw new KitchenUnavailableQuantityValidationError()
+      }
+
+      try {
+        const { error } = await client.rpc('record_unavailable_quantity', {
+          p_order_item_id: parsedItemId.data,
+          p_quantity: quantity,
+          p_reason: normalizedReason,
+        })
+        if (error) {
+          throw error
+        }
+      } catch {
+        throw new KitchenUnavailableQuantityCommandError()
       }
     },
   }

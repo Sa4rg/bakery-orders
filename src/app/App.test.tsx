@@ -45,6 +45,7 @@ const customerCancellationGateway:
 const kitchenProductionCommandGateway: KitchenProductionCommandGateway = {
   startOrder: async () => undefined,
   recordPreparedQuantity: async () => undefined,
+  recordUnavailableQuantity: async () => undefined,
 }
 
 const kitchenOrderQueryGateway: KitchenOrderQueryGateway = {
