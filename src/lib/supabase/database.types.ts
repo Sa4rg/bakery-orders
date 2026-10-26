@@ -222,6 +222,9 @@ isOneToOne: false
               "id": string,"name": string
             }[]
                            },
+"record_prepared_quantity":
+{ Args: { "p_order_item_id": string,"p_quantity": number }; Returns: undefined
+                           },
 "set_product_availability":
 { Args: { "p_available": boolean,"p_product_id": string }; Returns: boolean
                            },
