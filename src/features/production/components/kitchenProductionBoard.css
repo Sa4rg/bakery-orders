@@ -1,0 +1,81 @@
+/* Scoped M4-006 operational layout; no global theme or product catalog changes. */
+.kitchen-production {
+  margin-block: 1.75rem;
+  max-width: 78rem;
+}
+
+.kitchen-production__queue > p {
+  line-height: 1.45;
+}
+
+.kitchen-production__orders,
+.kitchen-production__order > ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.kitchen-production__order,
+.kitchen-production__item {
+  border: 1px solid #9ca3af;
+  border-radius: 0.65rem;
+  padding: 1rem;
+  min-width: 0;
+}
+
+.kitchen-production__item {
+  background: #f8fafc;
+  color: #17202e;
+}
+
+.kitchen-production dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 1rem;
+  max-width: 36rem;
+}
+
+.kitchen-production dt { font-weight: 600; }
+.kitchen-production dd { margin: 0; font-variant-numeric: tabular-nums; }
+.kitchen-production form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.65rem;
+  margin-block: 0.8rem;
+}
+.kitchen-production form label { flex-basis: 100%; font-weight: 600; }
+.kitchen-production input,
+.kitchen-production textarea {
+  max-width: 18rem;
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #64748b;
+  border-radius: 0.3rem;
+}
+.kitchen-production button { margin: 0.3rem; padding: 0.5rem 0.8rem; }
+.kitchen-production :is(button, input, textarea):focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+.kitchen-production [role='alert'] { font-weight: 600; }
+
+@media (max-width: 36rem) {
+  .kitchen-production dl { grid-template-columns: minmax(0, 1fr); }
+}
+
+
+.kitchen-production__detail {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #64748b;
+  border-radius: 0.65rem;
+}
+
+.kitchen-production select {
+  padding: 0.5rem;
+  margin: 0.5rem;
+  border: 1px solid #64748b;
+  border-radius: 0.3rem;
+}

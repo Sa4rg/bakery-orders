@@ -8,6 +8,10 @@ import { ManagerCatalogAdministration } from '../features/catalog/components/Man
 import type { ProductAvailabilityGateway } from '../features/catalog/application/productAvailabilityGateway'
 import { KitchenCatalogAvailability } from '../features/catalog/components/KitchenCatalogAvailability'
 import type { AppRole, ActiveBusinessMembership } from '../features/auth/domain/access'
+import type { KitchenProductionCommandGateway } from '../features/production/application/kitchenProductionCommandGateway'
+import type { KitchenOrderQueryFilters, KitchenOrderQueryGateway } from '../features/production/application/kitchenOrderQueryGateway'
+import type { KitchenQueueSynchronizer } from '../features/production/application/kitchenQueueSynchronization'
+import { KitchenProductionBoard } from '../features/production/components/KitchenProductionBoard'
 
 interface ProtectedShellProps {
   displayName: string
@@ -18,6 +22,9 @@ interface ProtectedShellProps {
   productAvailabilityGateway: ProductAvailabilityGateway
   createOrderGateway: CreateOrderGateway
   customerCancellationGateway: CustomerCancellationGateway
+  kitchenProductionCommandGateway: KitchenProductionCommandGateway
+  kitchenOrderQueryGateway: KitchenOrderQueryGateway
+  createKitchenQueueSynchronizer(filters?: KitchenOrderQueryFilters): KitchenQueueSynchronizer
   onSignOut(): Promise<boolean>
 }
 
@@ -31,6 +38,9 @@ export function ProtectedShell({
   productAvailabilityGateway,
   createOrderGateway,
   customerCancellationGateway,
+  kitchenProductionCommandGateway,
+  kitchenOrderQueryGateway,
+  createKitchenQueueSynchronizer,
   onSignOut,
 }: ProtectedShellProps) {
   const [signOutFailed, setSignOutFailed] = useState(false)
@@ -75,6 +85,13 @@ export function ProtectedShell({
             businessId={customerBusinessId}
           />
         )
+      )}
+      {role === 'KITCHEN' && (
+        <KitchenProductionBoard
+          commandGateway={kitchenProductionCommandGateway}
+          queryGateway={kitchenOrderQueryGateway}
+          createKitchenQueueSynchronizer={createKitchenQueueSynchronizer}
+        />
       )}
       {role === 'KITCHEN' && (
         <KitchenCatalogAvailability
