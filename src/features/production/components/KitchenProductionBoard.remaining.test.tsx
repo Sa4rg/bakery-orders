@@ -53,6 +53,7 @@ function setup() {
     startOrder: vi.fn(async () => undefined),
     recordPreparedQuantity: vi.fn(async () => undefined),
     recordUnavailableQuantity: vi.fn(async () => undefined),
+    markOrderReady: vi.fn(async () => undefined),
   }
   const emit = (next: Partial<KitchenQueueSyncState>, index = listeners.length - 1) => {
     act(() => listeners[index]!({

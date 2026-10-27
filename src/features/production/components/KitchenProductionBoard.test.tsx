@@ -54,6 +54,7 @@ function harness() {
     startOrder: vi.fn(async () => undefined),
     recordPreparedQuantity: vi.fn(async () => undefined),
     recordUnavailableQuantity: vi.fn(async () => undefined),
+    markOrderReady: vi.fn(async () => undefined),
   }
   const emitState = (state: KitchenQueueSyncState, index = subscribers.length - 1) => {
     act(() => subscribers[index]!(state))

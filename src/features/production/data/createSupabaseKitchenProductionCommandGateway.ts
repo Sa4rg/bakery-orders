@@ -7,6 +7,8 @@ import {
   KitchenProductionValidationError,
   KitchenUnavailableQuantityCommandError,
   KitchenUnavailableQuantityValidationError,
+  KitchenMarkReadyCommandError,
+  KitchenMarkReadyValidationError,
   type KitchenProductionCommandGateway,
 } from '../application/kitchenProductionCommandGateway'
 
@@ -58,6 +60,21 @@ export function createSupabaseKitchenProductionCommandGateway(
         }
       } catch {
         throw new KitchenProductionCommandError()
+      }
+    },
+
+    async markOrderReady(orderId) {
+      const parsed = orderIdSchema.safeParse(orderId)
+      if (!parsed.success) {
+        throw new KitchenMarkReadyValidationError()
+      }
+      try {
+        const { error } = await client.rpc('mark_order_ready', {
+          p_order_id: parsed.data,
+        })
+        if (error) throw error
+      } catch {
+        throw new KitchenMarkReadyCommandError()
       }
     },
 

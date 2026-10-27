@@ -4,6 +4,9 @@ import type { QuantityThousandths } from '../domain/kitchenProductionOrder'
 export interface KitchenProductionCommandGateway {
   startOrder(orderId: string): Promise<void>
 
+  /** Transition an IN_PROGRESS Order to READY only through the trusted SQL RPC. */
+  markOrderReady(orderId: string): Promise<void>
+
   /** Positive DELTA in exact integer thousandths, not a replacement total. */
   recordPreparedQuantity(
     orderItemId: string,
@@ -60,5 +63,21 @@ export class KitchenUnavailableQuantityCommandError extends Error {
   constructor() {
     super('Unable to record unavailable quantity.')
     this.name = 'KitchenUnavailableQuantityCommandError'
+  }
+}
+
+/** Invalid Order id: reject locally, before any READY RPC. */
+export class KitchenMarkReadyValidationError extends Error {
+  constructor() {
+    super('Order identifier is invalid.')
+    this.name = 'KitchenMarkReadyValidationError'
+  }
+}
+
+/** Safe SQL/network failure: never expose PostgreSQL details or internal actor data. */
+export class KitchenMarkReadyCommandError extends Error {
+  constructor() {
+    super('Unable to mark order ready.')
+    this.name = 'KitchenMarkReadyCommandError'
   }
 }

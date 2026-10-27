@@ -47,6 +47,7 @@ interface QueuePageProps extends KitchenProductionBoardProps {
 
 type Operation =
   | { readonly type: 'start'; readonly orderId: string }
+  | { readonly type: 'ready'; readonly orderId: string }
   | { readonly type: 'prepared'; readonly itemId: string; readonly thousandths: number }
   | { readonly type: 'unavailable'; readonly itemId: string; readonly thousandths: number; readonly reason: string }
 
@@ -115,6 +116,9 @@ function KitchenQueuePage({
       switch (operation.type) {
         case 'start':
           await commandGateway.startOrder(operation.orderId)
+          break
+        case 'ready':
+          await commandGateway.markOrderReady(operation.orderId)
           break
         case 'prepared':
           await commandGateway.recordPreparedQuantity(operation.itemId, operation.thousandths)
@@ -328,6 +332,13 @@ function KitchenOrderCard({ order, canMutate, onCommand }: OrderCardProps) {
           Start order #{order.orderNumber}
         </button>
       )}
+      {inProgress && fulfillment.resolution === 'RESOLVED'
+        && fulfillment.totals.preparedThousandths > 0 && (
+          <button type="button" disabled={!canMutate}
+            onClick={() => void onCommand({ type: 'ready', orderId: order.id })}>
+            Mark order #{order.orderNumber} ready
+          </button>
+        )}
       <ul aria-label={`Items for order ${order.orderNumber}`}>
         {order.items.map((item) => (
           <li key={item.id}>

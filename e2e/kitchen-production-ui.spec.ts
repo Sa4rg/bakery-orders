@@ -267,6 +267,44 @@ test('CUSTOMER order arrives via Realtime; KITCHEN operates UI and SQL records e
     })
     expect(audit.data?.every((entry) => entry.actor_user_id === persisted.data?.started_by_user_id))
       .toBe(true)
+
+    // M4-008: PARTIAL is eligible for READY only through the trusted SQL RPC.
+    // The active queue must drop the Order after authoritative Realtime/refetch.
+    await filter.selectOption('IN_PROGRESS')
+    await expect(view).toBeVisible({ timeout: 20_000 })
+    await expect(status).toBeVisible({ timeout: 20_000 })
+    await view.click()
+    const ready = card.getByRole('button', { name: `Mark order #${orderNumber} ready` })
+    await expect(ready).toBeEnabled({ timeout: 20_000 })
+    await ready.click()
+
+    await expect.poll(async () => {
+      const result = await admin.from('orders').select('status').eq('id', orderId).single()
+      if (result.error) throw new Error('Unable to read the persisted READY status.')
+      return result.data?.status
+    }, { timeout: 20_000 }).toBe('READY')
+    const readyOrder = await admin.from('orders')
+      .select('status, ready_at, ready_by_user_id').eq('id', orderId).single()
+    expect(readyOrder.error).toBeNull()
+    expect(readyOrder.data?.ready_at).toBeTruthy()
+    expect(readyOrder.data?.ready_by_user_id).toBe(persisted.data?.started_by_user_id)
+    const readyAudit = await admin.from('order_events')
+      .select('event_type, actor_user_id, previous_value, new_value, metadata, occurred_at')
+      .eq('order_id', orderId).eq('event_type', 'ORDER_READY')
+    expect(readyAudit.error).toBeNull()
+    expect(readyAudit.data).toHaveLength(1)
+    expect(readyAudit.data?.[0]).toMatchObject({
+      actor_user_id: readyOrder.data?.ready_by_user_id,
+      previous_value: { status: 'IN_PROGRESS' },
+      new_value: { status: 'READY' },
+      metadata: { fulfillment_condition: 'PARTIAL', prepared_quantity: 1, unavailable_quantity: 2 },
+    })
+    expect(readyAudit.data?.[0]?.occurred_at).toBe(readyOrder.data?.ready_at)
+
+    // Selected detail may still read READY; the IN_PROGRESS queue cannot.
+    await page.getByRole('button', { name: 'Back to production queue' }).click()
+    await expect(status).toBeVisible({ timeout: 20_000 })
+    await expect(view).toHaveCount(0, { timeout: 20_000 })
   } finally {
     await customerContext.close()
   }
