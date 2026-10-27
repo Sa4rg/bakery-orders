@@ -14,6 +14,7 @@ import type {
   KitchenProductionItem,
   KitchenProductionOrder,
 } from '../domain/kitchenProductionOrder'
+import { deriveKitchenFulfillment } from '../domain/kitchenFulfillment'
 import {
   formatKitchenQuantity,
   parseKitchenQuantityDelta,
@@ -306,12 +307,18 @@ interface OrderCardProps {
 }
 
 function KitchenOrderCard({ order, canMutate, onCommand }: OrderCardProps) {
+  const fulfillment = deriveKitchenFulfillment(order.items)
   const inProgress = order.status === 'IN_PROGRESS'
   return (
     <article className="kitchen-production__order" aria-label={`Production order ${order.orderNumber} for ${order.businessName}`}>
       <h3>Order #{order.orderNumber} — {order.businessName}</h3>
       <dl>
         <dt>Status</dt><dd>{order.status}</dd>
+        <dt>Fulfillment progress</dt><dd>{fulfillment.resolution === 'UNRESOLVED' ? 'Unresolved' : 'Resolved'}</dd>
+        {fulfillment.condition !== null && (
+          <><dt>Fulfillment condition</dt><dd>{fulfillment.condition}</dd></>
+        )}
+        <dt>Order remaining</dt><dd>{formatKitchenQuantity(fulfillment.totals.remainingThousandths)}</dd>
         <dt>Requested delivery</dt><dd>{new Date(order.requestedDeliveryAt).toLocaleString()}</dd>
       </dl>
       {order.customerNotes && <p>Customer notes: {order.customerNotes}</p>}

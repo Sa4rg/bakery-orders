@@ -118,6 +118,9 @@ test('CUSTOMER order arrives via Realtime; KITCHEN operates UI and SQL records e
     await expect(item).toBeVisible()
     await expect(amount(item, 'Requested')).toHaveText('3')
     await expect(amount(item, 'Remaining')).toHaveText('3')
+    await expect(amount(card, 'Fulfillment progress')).toHaveText('Unresolved')
+    await expect(amount(card, 'Order remaining')).toHaveText('3')
+    await expect(amount(card, 'Fulfillment condition')).toHaveCount(0)
 
     // First trusted mutation: RECEIVED -> IN_PROGRESS, exactly once.
     await card.getByRole('button', { name: `Start order #${orderNumber}` }).click()
@@ -170,6 +173,8 @@ test('CUSTOMER order arrives via Realtime; KITCHEN operates UI and SQL records e
       )
     }
     await expect(amount(item, 'Remaining')).toHaveText('2')
+    await expect(amount(card, 'Fulfillment progress')).toHaveText('Unresolved')
+    await expect(amount(card, 'Fulfillment condition')).toHaveCount(0)
 
     // Missing reason rejected locally; a valid trimmed reason stores +2
     // unavailable and resolves the line without transitioning Order to READY.
@@ -205,6 +210,9 @@ test('CUSTOMER order arrives via Realtime; KITCHEN operates UI and SQL records e
     await expect(amount(item, 'Unavailable')).toHaveText('2', { timeout: 20_000 })
     await expect(amount(item, 'Remaining')).toHaveText('0')
     await expect(item.getByText('Line fully resolved.')).toBeVisible()
+    await expect(amount(card, 'Fulfillment progress')).toHaveText('Resolved')
+    await expect(amount(card, 'Fulfillment condition')).toHaveText('PARTIAL')
+    await expect(amount(card, 'Order remaining')).toHaveText('0')
     await expect(card.getByText('IN_PROGRESS', { exact: true })).toBeVisible()
 
     // Status-filter behavior after commands: in-progress remains; received excludes it.
