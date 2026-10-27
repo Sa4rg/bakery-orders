@@ -5,20 +5,20 @@ import type { Database } from '../src/lib/supabase/database.types.ts'
 import type { SupabaseBrowserClient } from '../src/lib/supabase/client.ts'
 import type {
   KitchenOrderQueryGateway,
-} from '../src/features/orders/application/kitchenOrderQueryGateway.ts'
+} from '../src/features/production/application/kitchenOrderQueryGateway.ts'
 import type {
   KitchenProductionRealtimeGateway,
-} from '../src/features/orders/application/kitchenProductionRealtimeGateway.ts'
+} from '../src/features/production/application/kitchenProductionRealtimeGateway.ts'
 import {
   createKitchenQueueSynchronizer,
   type KitchenQueueSyncState,
-} from '../src/features/orders/application/kitchenQueueSynchronization.ts'
+} from '../src/features/production/application/kitchenQueueSynchronization.ts'
 import {
   createSupabaseKitchenOrderQueryGateway,
-} from '../src/features/orders/data/createSupabaseKitchenOrderQueryGateway.ts'
+} from '../src/features/production/data/createSupabaseKitchenOrderQueryGateway.ts'
 import {
   createSupabaseKitchenProductionRealtimeGateway,
-} from '../src/features/orders/data/createSupabaseKitchenProductionRealtimeGateway.ts'
+} from '../src/features/production/data/createSupabaseKitchenProductionRealtimeGateway.ts'
 import {
   customerOrderingFixture,
   fixtureBusinesses,

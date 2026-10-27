@@ -15,8 +15,8 @@ import type { CreateOrderGateway } from '../features/orders/application/createOr
 
 import App from './App'
 import type { CustomerCancellationGateway } from '../features/orders/application/customerCancellationGateway'
-import type { KitchenOrderQueryGateway } from '../features/orders/application/kitchenOrderQueryGateway'
-import type { KitchenProductionCommandGateway } from '../features/orders/application/kitchenProductionCommandGateway'
+import type { KitchenOrderQueryGateway } from '../features/production/application/kitchenOrderQueryGateway'
+import type { KitchenProductionCommandGateway } from '../features/production/application/kitchenProductionCommandGateway'
 
 const emptyCatalog: CustomerCatalog = { categories: [], products: [] }
 

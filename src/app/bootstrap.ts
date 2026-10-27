@@ -15,14 +15,14 @@ import type { CreateOrderGateway } from '../features/orders/application/createOr
 import { createSupabaseCreateOrderGateway } from '../features/orders/data/createSupabaseCreateOrderGateway'
 import type { CustomerCancellationGateway } from '../features/orders/application/customerCancellationGateway'
 import { createSupabaseCustomerCancellationGateway } from '../features/orders/data/createSupabaseCustomerCancellationGateway'
-import type { KitchenOrderQueryGateway } from '../features/orders/application/kitchenOrderQueryGateway'
-import { createSupabaseKitchenOrderQueryGateway } from '../features/orders/data/createSupabaseKitchenOrderQueryGateway'
-import type { KitchenOrderQueryFilters } from '../features/orders/application/kitchenOrderQueryGateway'
-import type { KitchenQueueSynchronizer } from '../features/orders/application/kitchenQueueSynchronization'
-import { createKitchenQueueSynchronizer } from '../features/orders/application/kitchenQueueSynchronization'
-import { createSupabaseKitchenProductionRealtimeGateway } from '../features/orders/data/createSupabaseKitchenProductionRealtimeGateway'
-import type { KitchenProductionCommandGateway } from '../features/orders/application/kitchenProductionCommandGateway'
-import { createSupabaseKitchenProductionCommandGateway } from '../features/orders/data/createSupabaseKitchenProductionCommandGateway'
+import type { KitchenOrderQueryGateway } from '../features/production/application/kitchenOrderQueryGateway'
+import { createSupabaseKitchenOrderQueryGateway } from '../features/production/data/createSupabaseKitchenOrderQueryGateway'
+import type { KitchenOrderQueryFilters } from '../features/production/application/kitchenOrderQueryGateway'
+import type { KitchenQueueSynchronizer } from '../features/production/application/kitchenQueueSynchronization'
+import { createKitchenQueueSynchronizer } from '../features/production/application/kitchenQueueSynchronization'
+import { createSupabaseKitchenProductionRealtimeGateway } from '../features/production/data/createSupabaseKitchenProductionRealtimeGateway'
+import type { KitchenProductionCommandGateway } from '../features/production/application/kitchenProductionCommandGateway'
+import { createSupabaseKitchenProductionCommandGateway } from '../features/production/data/createSupabaseKitchenProductionCommandGateway'
 
 export type AppBootstrap =
   | {

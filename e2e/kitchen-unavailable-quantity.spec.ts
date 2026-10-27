@@ -6,9 +6,9 @@ import type { SupabaseBrowserClient } from '../src/lib/supabase/client.ts'
 import {
   KitchenUnavailableQuantityCommandError,
   KitchenUnavailableQuantityValidationError,
-} from '../src/features/orders/application/kitchenProductionCommandGateway.ts'
-import { createSupabaseKitchenProductionCommandGateway } from '../src/features/orders/data/createSupabaseKitchenProductionCommandGateway.ts'
-import { createSupabaseKitchenOrderQueryGateway } from '../src/features/orders/data/createSupabaseKitchenOrderQueryGateway.ts'
+} from '../src/features/production/application/kitchenProductionCommandGateway.ts'
+import { createSupabaseKitchenProductionCommandGateway } from '../src/features/production/data/createSupabaseKitchenProductionCommandGateway.ts'
+import { createSupabaseKitchenOrderQueryGateway } from '../src/features/production/data/createSupabaseKitchenOrderQueryGateway.ts'
 import {
   customerOrderingFixture,
   fixtureBusinesses,

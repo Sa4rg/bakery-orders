@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 import { expect, test } from '@playwright/test'
 import type { Database } from '../src/lib/supabase/database.types.ts'
 import type { SupabaseBrowserClient } from '../src/lib/supabase/client.ts'
-import { createSupabaseKitchenProductionCommandGateway } from '../src/features/orders/data/createSupabaseKitchenProductionCommandGateway.ts'
-import { createSupabaseKitchenOrderQueryGateway } from '../src/features/orders/data/createSupabaseKitchenOrderQueryGateway.ts'
+import { createSupabaseKitchenProductionCommandGateway } from '../src/features/production/data/createSupabaseKitchenProductionCommandGateway.ts'
+import { createSupabaseKitchenOrderQueryGateway } from '../src/features/production/data/createSupabaseKitchenOrderQueryGateway.ts'
 import {
   customerOrderingFixture,
   fixtureBusinesses,
