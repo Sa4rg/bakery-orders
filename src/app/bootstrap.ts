@@ -15,6 +15,16 @@ import type { CreateOrderGateway } from '../features/orders/application/createOr
 import { createSupabaseCreateOrderGateway } from '../features/orders/data/createSupabaseCreateOrderGateway'
 import type { CustomerCancellationGateway } from '../features/orders/application/customerCancellationGateway'
 import { createSupabaseCustomerCancellationGateway } from '../features/orders/data/createSupabaseCustomerCancellationGateway'
+import type { KitchenOrderQueryGateway } from '../features/production/application/kitchenOrderQueryGateway'
+import { createSupabaseKitchenOrderQueryGateway } from '../features/production/data/createSupabaseKitchenOrderQueryGateway'
+import type { KitchenOrderQueryFilters } from '../features/production/application/kitchenOrderQueryGateway'
+import type { KitchenQueueSynchronizer } from '../features/production/application/kitchenQueueSynchronization'
+import { createKitchenQueueSynchronizer } from '../features/production/application/kitchenQueueSynchronization'
+import { createSupabaseKitchenProductionRealtimeGateway } from '../features/production/data/createSupabaseKitchenProductionRealtimeGateway'
+import type { KitchenProductionCommandGateway } from '../features/production/application/kitchenProductionCommandGateway'
+import { createSupabaseKitchenProductionCommandGateway } from '../features/production/data/createSupabaseKitchenProductionCommandGateway'
+import type { ManagerBlockedOrdersGateway } from '../features/production/application/managerBlockedOrdersGateway'
+import { createSupabaseManagerBlockedOrdersGateway } from '../features/production/data/createSupabaseManagerBlockedOrdersGateway'
 
 export type AppBootstrap =
   | {
@@ -25,6 +35,10 @@ export type AppBootstrap =
       managerCatalogGateway: ManagerCatalogGateway
       createOrderGateway: CreateOrderGateway
       customerCancellationGateway: CustomerCancellationGateway
+      kitchenOrderQueryGateway: KitchenOrderQueryGateway
+      kitchenProductionCommandGateway: KitchenProductionCommandGateway
+      managerBlockedOrdersGateway: ManagerBlockedOrdersGateway
+      createKitchenQueueSynchronizer: (filters?: KitchenOrderQueryFilters) => KitchenQueueSynchronizer
     }
   | { status: 'misconfigured'; variables: SupabaseConfigVariable[] }
 
@@ -40,6 +54,8 @@ export function createAppBootstrap(env: Record<string, unknown>): AppBootstrap {
   }
 
   const client = createSupabaseBrowserClient(config)
+  const kitchenOrderQueryGateway = createSupabaseKitchenOrderQueryGateway(client)
+  const kitchenRealtimeGateway = createSupabaseKitchenProductionRealtimeGateway(client)
 
   return {
     status: 'ready',
@@ -49,5 +65,13 @@ export function createAppBootstrap(env: Record<string, unknown>): AppBootstrap {
     managerCatalogGateway: createSupabaseManagerCatalogGateway(client),
     createOrderGateway: createSupabaseCreateOrderGateway(client),
     customerCancellationGateway: createSupabaseCustomerCancellationGateway(client),
+    kitchenOrderQueryGateway,
+    kitchenProductionCommandGateway: createSupabaseKitchenProductionCommandGateway(client),
+    managerBlockedOrdersGateway: createSupabaseManagerBlockedOrdersGateway(client),
+    createKitchenQueueSynchronizer: (filters) => createKitchenQueueSynchronizer({
+      queryGateway: kitchenOrderQueryGateway,
+      realtimeGateway: kitchenRealtimeGateway,
+      filters,
+    }),
   }
 }

@@ -217,8 +217,25 @@ isOneToOne: false
 "create_order":
 { Args: { "p_business_id": string,"p_customer_notes": string,"p_idempotency_key": string,"p_items": Json,"p_requested_delivery_at": string }; Returns: string
                            },
+"get_kitchen_order_business_names":
+{ Args: { "p_business_ids": (string)[] }; Returns: {
+              "id": string,"name": string
+            }[]
+                           },
+"mark_order_ready":
+{ Args: { "p_order_id": string }; Returns: undefined
+                           },
+"record_prepared_quantity":
+{ Args: { "p_order_item_id": string,"p_quantity": number }; Returns: undefined
+                           },
+"record_unavailable_quantity":
+{ Args: { "p_order_item_id": string,"p_quantity": number,"p_reason": string }; Returns: undefined
+                           },
 "set_product_availability":
 { Args: { "p_available": boolean,"p_product_id": string }; Returns: boolean
+                           },
+"start_order":
+{ Args: { "p_order_id": string }; Returns: undefined
                            }
           }
           Enums: {

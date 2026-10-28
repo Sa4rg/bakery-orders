@@ -15,6 +15,8 @@ import type { CreateOrderGateway } from '../features/orders/application/createOr
 
 import App from './App'
 import type { CustomerCancellationGateway } from '../features/orders/application/customerCancellationGateway'
+import type { KitchenOrderQueryGateway } from '../features/production/application/kitchenOrderQueryGateway'
+import type { KitchenProductionCommandGateway } from '../features/production/application/kitchenProductionCommandGateway'
 
 const emptyCatalog: CustomerCatalog = { categories: [], products: [] }
 
@@ -39,6 +41,21 @@ const customerCancellationGateway:
   CustomerCancellationGateway = {
     cancelOrder: async () => undefined,
 }
+
+const kitchenProductionCommandGateway: KitchenProductionCommandGateway = {
+  startOrder: async () => undefined,
+  recordPreparedQuantity: async () => undefined,
+  recordUnavailableQuantity: async () => undefined,
+  markOrderReady: async () => undefined,
+}
+
+const kitchenOrderQueryGateway: KitchenOrderQueryGateway = {
+  loadProductionQueue: async () => ({
+    orders: [],
+    nextCursor: null,
+  }),
+  loadProductionOrder: async () => null,
+}
   
 function renderReadyApp(authGateway = createFakeAuthGateway()) {
   const catalogFake = createFakeCatalogGateway([emptyCatalog])
@@ -53,7 +70,13 @@ function renderReadyApp(authGateway = createFakeAuthGateway()) {
         productAvailabilityGateway,
         createOrderGateway,
         customerCancellationGateway,
-
+        kitchenOrderQueryGateway,
+        kitchenProductionCommandGateway,
+        managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
+        createKitchenQueueSynchronizer: () => ({
+          start: () => () => undefined,
+          refresh: () => undefined,
+        }),
       }}
     />,
   )
@@ -218,6 +241,13 @@ describe('App', () => {
           productAvailabilityGateway: availabilityGateway,
           createOrderGateway,
           customerCancellationGateway,
+          kitchenOrderQueryGateway,
+          kitchenProductionCommandGateway,
+          managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
+          createKitchenQueueSynchronizer: () => ({
+            start: () => () => undefined,
+            refresh: () => undefined,
+          }),
         }}
       />,
     )
@@ -315,6 +345,13 @@ describe('App', () => {
           productAvailabilityGateway: availabilityGateway,
           createOrderGateway,
           customerCancellationGateway,
+          kitchenOrderQueryGateway,
+          kitchenProductionCommandGateway,
+          managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
+          createKitchenQueueSynchronizer: () => ({
+            start: () => () => undefined,
+            refresh: () => undefined,
+          }),
         }}
       />,
     )

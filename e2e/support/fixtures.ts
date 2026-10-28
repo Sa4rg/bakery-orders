@@ -25,6 +25,15 @@ export const managerCatalogFixture = {
   productName: 'E2E Manager Administration Product',
 } as const
 
+/** Distinct reserved names for each repeat of the Manager mutation E2E. */
+export function managerCatalogFixtureForRepeat(repeatIndex: number) {
+  if (repeatIndex === 0) return managerCatalogFixture
+  return {
+    categoryName: `${managerCatalogFixture.categoryName} (repeat ${repeatIndex})`,
+    productName: `${managerCatalogFixture.productName} (repeat ${repeatIndex})`,
+  }
+}
+
 /** Reserved catalog rows used only by the Product availability E2E. */
 export const productAvailabilityFixture = {
   categoryId: '00000000-0000-4000-8000-000000000e11',
@@ -32,6 +41,19 @@ export const productAvailabilityFixture = {
   categoryName: 'E2E Product Availability Category',
   productName: 'E2E Product Availability Product',
 } as const
+
+/** Each repeat gets a separate Product under the same reserved Category. */
+export function productAvailabilityFixtureForRepeat(repeatIndex: number) {
+  if (repeatIndex === 0) return productAvailabilityFixture
+  if (!Number.isSafeInteger(repeatIndex) || repeatIndex < 0 || repeatIndex > 4095) {
+    throw new Error('Invalid E2E repeat index for Product availability.')
+  }
+  return {
+    ...productAvailabilityFixture,
+    productId: `00000000-0000-4000-8000-${(0xe100 + repeatIndex).toString(16).padStart(12, '0')}`,
+    productName: `${productAvailabilityFixture.productName} (repeat ${repeatIndex})`,
+  }
+}
 
 /** Reserved catalog rows used only by the CUSTOMER ordering E2E. */
 export const customerOrderingFixture = {
@@ -295,6 +317,17 @@ export async function removeFixtures(admin: LocalAdminClient): Promise<void> {
     fail('remove the Product availability E2E Product')
   }
 
+  // Only the E2E-reserved repeat suffix is matched. This also removes
+  // leftovers when a previous test process was interrupted before teardown.
+  const repeatedAvailabilityProducts = await admin
+    .from('products')
+    .delete()
+    .like('name', `${productAvailabilityFixture.productName} (repeat %)`)
+
+  if (repeatedAvailabilityProducts.error) {
+    fail('remove repeated Product availability E2E Products')
+  }
+
   const availabilityCategory = await admin
     .from('categories')
     .delete()
@@ -303,11 +336,12 @@ export async function removeFixtures(admin: LocalAdminClient): Promise<void> {
   if (availabilityCategory.error) {
     fail('remove the Product availability E2E Category')
   }
-  // Exact reserved names only; remove the dependent Product before its Category.
+  // The reserved Manager E2E prefix covers the base Product and its
+  // per-repeat variants. Delete Products before their respective Categories.
   const catalogProduct = await admin
     .from('products')
     .delete()
-    .eq('name', managerCatalogFixture.productName)
+    .like('name', `${managerCatalogFixture.productName}%`)
 
   if (catalogProduct.error) {
     fail('remove the Manager catalog E2E Product')
@@ -316,7 +350,7 @@ export async function removeFixtures(admin: LocalAdminClient): Promise<void> {
   const catalogCategory = await admin
     .from('categories')
     .delete()
-    .eq('name', managerCatalogFixture.categoryName)
+    .like('name', `${managerCatalogFixture.categoryName}%`)
 
   if (catalogCategory.error) {
     fail('remove the Manager catalog E2E Category')
@@ -377,6 +411,7 @@ export async function removeFixtures(admin: LocalAdminClient): Promise<void> {
 export async function provisionFixtures(
   admin: LocalAdminClient,
   password: string,
+  repeatEach: number = 1,
 ): Promise<void> {
   await removeFixtures(admin)
 
@@ -443,6 +478,23 @@ export async function provisionFixtures(
 
   if (availabilityProduct.error) {
     fail('create the Product availability E2E Product')
+  }
+
+  for (let repeatIndex = 1; repeatIndex < repeatEach; repeatIndex += 1) {
+    const variant = productAvailabilityFixtureForRepeat(repeatIndex)
+    const added = await admin.from('products').insert({
+      id: variant.productId,
+      category_id: variant.categoryId,
+      name: variant.productName,
+      description: 'Reserved Product availability E2E repeat data.',
+      unit_code: 'UNIT',
+      quantity_step: 1,
+      active: true,
+      available: true,
+    })
+    if (added.error) {
+      fail('create repeated Product availability E2E Product')
+    }
   }
 
   const businesses = await admin

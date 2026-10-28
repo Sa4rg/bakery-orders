@@ -13,7 +13,13 @@ test('authorized CUSTOMER browses and filters the RLS-protected catalog', async 
   await expect(
     page.getByRole('heading', { name: 'Chocolate Croissant' }),
   ).toBeVisible()
-  await expect(page.getByText('Unavailable', { exact: true })).toBeVisible()
+  // Scope the status to the seeded unavailable Product. Other independent E2E
+  // tests may have marked their own Product unavailable in the same database.
+  const chocolateCroissant = page
+    .getByRole('list', { name: 'Catalog products' })
+    .getByRole('article')
+    .filter({ has: page.getByRole('heading', { name: 'Chocolate Croissant', exact: true }) })
+  await expect(chocolateCroissant.getByText('Unavailable', { exact: true })).toBeVisible()
   await expect(
     page.getByRole('heading', { name: 'Ham and Cheese Croissant' }),
   ).toHaveCount(0)

@@ -41,6 +41,24 @@ describe('createAppBootstrap', () => {
       expect(typeof bootstrap.createOrderGateway.createOrder).toBe(
         'function',
       )
+      expect(typeof bootstrap.kitchenOrderQueryGateway.loadProductionQueue).toBe(
+        'function',
+      )
+      expect(typeof bootstrap.kitchenOrderQueryGateway.loadProductionOrder).toBe(
+        'function',
+      )
+      expect(typeof bootstrap.kitchenProductionCommandGateway.startOrder).toBe(
+        'function',
+      )
+      expect(typeof bootstrap.kitchenProductionCommandGateway.recordPreparedQuantity).toBe(
+        'function',
+      )
+      expect(typeof bootstrap.kitchenProductionCommandGateway.recordUnavailableQuantity).toBe(
+        'function',
+      )
+      const synchronizer = bootstrap.createKitchenQueueSynchronizer()
+      expect(typeof synchronizer.start).toBe('function')
+      expect(typeof synchronizer.refresh).toBe('function')
     }
   })
 })

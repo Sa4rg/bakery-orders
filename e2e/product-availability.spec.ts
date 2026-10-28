@@ -1,10 +1,13 @@
 import { expect, test } from '@playwright/test'
 import { signInThroughUi } from './support/browserAuth.ts'
-import { productAvailabilityFixture } from './support/fixtures.ts'
+import { productAvailabilityFixtureForRepeat } from './support/fixtures.ts'
 
 test('KITCHEN changes Product availability and the persisted state survives reload', async ({
   page,
-}) => {
+}, testInfo) => {
+  // The first repetition marks its Product unavailable. A second repetition
+  // must use a distinct, freshly provisioned Product to remain independent.
+  const fixture = productAvailabilityFixtureForRepeat(testInfo.repeatEachIndex)
   await signInThroughUi(page, 'kitchen')
 
   await expect(
@@ -16,7 +19,7 @@ test('KITCHEN changes Product availability and the persisted state survives relo
   ).toBeVisible()
 
   const product = page.getByRole('article', {
-    name: `Product availability: ${productAvailabilityFixture.productName}`,
+    name: `Product availability: ${fixture.productName}`, exact: true,
   })
 
   await expect(product).toBeVisible()
@@ -24,7 +27,7 @@ test('KITCHEN changes Product availability and the persisted state survives relo
 
   await product
     .getByRole('button', {
-      name: `Mark ${productAvailabilityFixture.productName} unavailable`,
+      name: `Mark ${fixture.productName} unavailable`,
     })
     .click()
 
@@ -33,7 +36,7 @@ test('KITCHEN changes Product availability and the persisted state survives relo
   await page.reload()
 
   const reloadedProduct = page.getByRole('article', {
-    name: `Product availability: ${productAvailabilityFixture.productName}`,
+    name: `Product availability: ${fixture.productName}`, exact: true,
   })
 
   await expect(reloadedProduct).toBeVisible()
