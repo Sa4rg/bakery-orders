@@ -14,7 +14,7 @@ import type {
   KitchenProductionItem,
   KitchenProductionOrder,
 } from '../domain/kitchenProductionOrder'
-import { deriveKitchenFulfillment } from '../domain/kitchenFulfillment'
+import { deriveKitchenBlockedCondition } from '../domain/kitchenBlockedCondition'
 import {
   formatKitchenQuantity,
   parseKitchenQuantityDelta,
@@ -311,7 +311,8 @@ interface OrderCardProps {
 }
 
 function KitchenOrderCard({ order, canMutate, onCommand }: OrderCardProps) {
-  const fulfillment = deriveKitchenFulfillment(order.items)
+  const blocked = deriveKitchenBlockedCondition(order)
+  const fulfillment = blocked.fulfillment
   const inProgress = order.status === 'IN_PROGRESS'
   return (
     <article className="kitchen-production__order" aria-label={`Production order ${order.orderNumber} for ${order.businessName}`}>
@@ -326,6 +327,13 @@ function KitchenOrderCard({ order, canMutate, onCommand }: OrderCardProps) {
         <dt>Requested delivery</dt><dd>{new Date(order.requestedDeliveryAt).toLocaleString()}</dd>
       </dl>
       {order.customerNotes && <p>Customer notes: {order.customerNotes}</p>}
+      {blocked.blocked && (
+        <aside aria-label={`Manager intervention required for order #${order.orderNumber}`}>
+          <p><strong>Manager intervention required.</strong> All requested quantities are unavailable.</p>
+          <p>This order remains IN_PROGRESS and cannot be marked READY or dispatched.
+            Contact MANAGER for an authorized, audited resolution. No automatic cancellation occurs.</p>
+        </aside>
+      )}
       {order.status === 'RECEIVED' && (
         <button type="button" disabled={!canMutate}
           onClick={() => void onCommand({ type: 'start', orderId: order.id })}>

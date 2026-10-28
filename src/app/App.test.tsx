@@ -72,6 +72,7 @@ function renderReadyApp(authGateway = createFakeAuthGateway()) {
         customerCancellationGateway,
         kitchenOrderQueryGateway,
         kitchenProductionCommandGateway,
+        managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
         createKitchenQueueSynchronizer: () => ({
           start: () => () => undefined,
           refresh: () => undefined,
@@ -242,6 +243,7 @@ describe('App', () => {
           customerCancellationGateway,
           kitchenOrderQueryGateway,
           kitchenProductionCommandGateway,
+          managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
           createKitchenQueueSynchronizer: () => ({
             start: () => () => undefined,
             refresh: () => undefined,
@@ -345,6 +347,7 @@ describe('App', () => {
           customerCancellationGateway,
           kitchenOrderQueryGateway,
           kitchenProductionCommandGateway,
+          managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
           createKitchenQueueSynchronizer: () => ({
             start: () => () => undefined,
             refresh: () => undefined,

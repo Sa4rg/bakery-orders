@@ -38,6 +38,7 @@ export default function App({ bootstrap }: AppProps) {
                 createOrderGateway={bootstrap.createOrderGateway}
                 customerCancellationGateway={bootstrap.customerCancellationGateway}
                 kitchenProductionCommandGateway={bootstrap.kitchenProductionCommandGateway}
+                managerBlockedOrdersGateway={bootstrap.managerBlockedOrdersGateway}
                 kitchenOrderQueryGateway={bootstrap.kitchenOrderQueryGateway}
                 createKitchenQueueSynchronizer={bootstrap.createKitchenQueueSynchronizer}
                 onSignOut={signOut}

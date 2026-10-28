@@ -35,6 +35,7 @@ function renderWithRole(role: AppRole) {
     createOrderGateway: { createOrder: async () => '00000000-0000-4000-8000-000000000001' },
     customerCancellationGateway: { cancelOrder: async () => undefined },
     kitchenOrderQueryGateway: { loadProductionQueue: async () => ({ orders: [], nextCursor: null }), loadProductionOrder: async () => null },
+    managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
     kitchenProductionCommandGateway: {
       startOrder: vi.fn(async () => undefined),
       recordPreparedQuantity: vi.fn(async () => undefined),
@@ -67,6 +68,11 @@ describe('Kitchen production application wiring (M4-006C)', () => {
     await screen.findByText('Application foundation ready.')
     expect(screen.queryByRole('heading', { name: 'Kitchen production' })).toBeNull()
     expect(h.createKitchenQueueSynchronizer).not.toHaveBeenCalled()
+    if (role === 'MANAGER') {
+      expect(screen.getByRole('heading', { name: 'Production interventions' })).toBeVisible()
+    } else {
+      expect(screen.queryByRole('heading', { name: 'Production interventions' })).toBeNull()
+    }
     expect(h.dispose).not.toHaveBeenCalled()
   })
 })
