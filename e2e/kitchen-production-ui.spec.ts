@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page, type Request } from '@playwright/test'
 import { signInThroughUi } from './support/browserAuth.ts'
 import { customerOrderingFixture, fixtureBusinesses } from './support/fixtures.ts'
 import { createLocalAdminClient, resolveLocalSupabaseRuntime } from './support/localSupabase.ts'
@@ -60,6 +60,67 @@ async function uiNotices(page: Page): Promise<string> {
   return notices.map((notice) => notice.trim()).filter(Boolean).slice(0, 12).join(' | ')
 }
 
+/**
+ * Observe persisted state or an explicit UI outcome. This method NEVER sends
+ * an RPC, so an uncertain command cannot accidentally be repeated by a test.
+ */
+type ReadyOutcome = 'PENDING' | 'READY' | 'NOT_SUBMITTED' | 'UNCONFIRMED'
+
+async function observeReadyOutcome(
+  page: Page,
+  admin: ReturnType<typeof localAdmin>,
+  orderId: string,
+): Promise<ReadyOutcome> {
+  const noSubmission = page.getByText(
+    'Production data changed before this command could be sent. No mutation was submitted. Wait for a fresh queue and submit again.',
+    { exact: true },
+  )
+  const unconfirmed = page.getByText(
+    'Could not confirm the operation. Refresh the queue and verify quantities before attempting it again.',
+    { exact: true },
+  )
+
+  const readOutcome = async (): Promise<ReadyOutcome> => {
+    const persisted = await admin.from('orders').select('status').eq('id', orderId).single()
+    if (persisted.error) throw new Error('Unable to read the persisted READY status.')
+    if (persisted.data?.status === 'READY') return 'READY'
+    if (persisted.data?.status !== 'IN_PROGRESS') {
+      throw new Error('Order entered an unexpected status before READY was confirmed.')
+    }
+    if (await unconfirmed.isVisible()) return 'UNCONFIRMED'
+    if (await noSubmission.isVisible()) return 'NOT_SUBMITTED'
+    return 'PENDING'
+  }
+
+  await expect.poll(readOutcome, {
+    timeout: 20_000,
+    message: 'Waiting for persisted READY or explicit UI feedback from the command.',
+  }).not.toBe('PENDING')
+  return readOutcome()
+}
+
+/**
+ * Keyset pagination displays only 25 Orders per page. Other E2E workers can
+ * create earlier-delivery Orders, pushing this test's Order off page one.
+ * Traverse the UI pages; no reload, manual refresh, or mutation retry.
+ */
+async function findOrderOnProductionPages(page: Page, view: Locator): Promise<void> {
+  const fresh = page.getByText('Realtime: connected. Queue up to date.', { exact: true })
+  const next = page.getByRole('navigation', { name: 'Production pages' })
+    .getByRole('button', { name: 'Next page' })
+
+  for (let pageIndex = 0; pageIndex < 100; pageIndex += 1) {
+    // Wait for each cursor's authorized, authoritative read to finish.
+    await expect(fresh).toBeVisible({ timeout: 20_000 })
+    if (await view.isVisible()) return
+    if (!(await next.isEnabled())) {
+      throw new Error(`Production Order was not found after ${pageIndex + 1} page(s) of this filter.`)
+    }
+    await next.click()
+  }
+  throw new Error('Production queue exceeded the 100-page test bound.')
+}
+
 test('CUSTOMER order arrives via Realtime; KITCHEN operates UI and SQL records exact audit', async ({ browser, page }) => {
   test.setTimeout(120_000)
 
@@ -99,9 +160,10 @@ test('CUSTOMER order arrives via Realtime; KITCHEN operates UI and SQL records e
     })
     await expect(view).toBeVisible({ timeout: 20_000 })
 
-    // Switching filters rebuilds the listener/cursor while retaining this Order.
+    // Switching filters rebuilds the listener/cursor. ALL_ACTIVE may contain
+    // earlier-delivery Orders on page one, so inspect its actual UI pages.
     await filter.selectOption('ALL_ACTIVE')
-    await expect(view).toBeVisible({ timeout: 20_000 })
+    await findOrderOnProductionPages(page, view)
     await view.click()
 
     const detail = page.getByRole('region', { name: 'Selected production order' })
@@ -218,7 +280,7 @@ test('CUSTOMER order arrives via Realtime; KITCHEN operates UI and SQL records e
     // Status-filter behavior after commands: in-progress remains; received excludes it.
     await page.getByRole('button', { name: 'Back to production queue' }).click()
     await filter.selectOption('IN_PROGRESS')
-    await expect(view).toBeVisible({ timeout: 20_000 })
+    await findOrderOnProductionPages(page, view)
     await filter.selectOption('RECEIVED')
     await expect(status).toBeVisible({ timeout: 20_000 })
     await expect(view).toHaveCount(0)
@@ -271,18 +333,55 @@ test('CUSTOMER order arrives via Realtime; KITCHEN operates UI and SQL records e
     // M4-008: PARTIAL is eligible for READY only through the trusted SQL RPC.
     // The active queue must drop the Order after authoritative Realtime/refetch.
     await filter.selectOption('IN_PROGRESS')
-    await expect(view).toBeVisible({ timeout: 20_000 })
+    await findOrderOnProductionPages(page, view)
     await expect(status).toBeVisible({ timeout: 20_000 })
     await view.click()
     const ready = card.getByRole('button', { name: `Mark order #${orderNumber} ready` })
-    await expect(ready).toBeEnabled({ timeout: 20_000 })
-    await ready.click()
+    let readyRpcRequests = 0
+    const trackReadyRequest = (request: Request) => {
+      if (request.method() === 'POST'
+        && new URL(request.url()).pathname.endsWith('/rest/v1/rpc/mark_order_ready')) {
+        readyRpcRequests += 1
+      }
+    }
+    page.on('request', trackReadyRequest)
+    try {
+      // Another E2E worker may create an Order and invalidate this queue just
+      // as the operator clicks. The UI explicitly rejects stale commands BEFORE
+      // sending a mutation. This is not an RPC failure and is safe to resubmit
+      // only after confirming that no request or ORDER_READY event exists.
+      await expect(status).toBeVisible({ timeout: 20_000 })
+      await expect(ready).toBeEnabled({ timeout: 20_000 })
+      await ready.click()
+      let outcome = await observeReadyOutcome(page, admin, orderId)
 
-    await expect.poll(async () => {
-      const result = await admin.from('orders').select('status').eq('id', orderId).single()
-      if (result.error) throw new Error('Unable to read the persisted READY status.')
-      return result.data?.status
-    }, { timeout: 20_000 }).toBe('READY')
+      if (outcome === 'NOT_SUBMITTED') {
+        expect(readyRpcRequests, 'The stale-queue rejection must not send READY').toBe(0)
+        const auditBeforeResubmit = await admin.from('order_events')
+          .select('id').eq('order_id', orderId).eq('event_type', 'ORDER_READY')
+        expect(auditBeforeResubmit.error).toBeNull()
+        expect(auditBeforeResubmit.data).toHaveLength(0)
+
+        // Simulate a user waiting for the next authoritative snapshot, then
+        // deliberately clicking again. Never retry an uncertain/failed RPC.
+        await expect(status).toBeVisible({ timeout: 20_000 })
+        await expect(ready).toBeEnabled({ timeout: 20_000 })
+        await ready.click()
+        outcome = await observeReadyOutcome(page, admin, orderId)
+      }
+
+      if (outcome !== 'READY') {
+        throw new Error(`READY was not confirmed (${outcome}). UI notices: ${await uiNotices(page)}.`)
+      }
+      expect(readyRpcRequests, 'Exactly one READY RPC must be sent').toBe(1)
+    } catch (error) {
+      throw new Error(
+        `READY UI verification failed. RPC POSTs: ${readyRpcRequests}. UI notices: ${await uiNotices(page)}.`,
+        { cause: error },
+      )
+    } finally {
+      page.off('request', trackReadyRequest)
+    }
     const readyOrder = await admin.from('orders')
       .select('status, ready_at, ready_by_user_id').eq('id', orderId).single()
     expect(readyOrder.error).toBeNull()

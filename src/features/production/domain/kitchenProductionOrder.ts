@@ -1,4 +1,4 @@
-//import type { Database } from '../../../lib/supabase/database.types'
+import { parseQuantityThousandths } from '../../../shared/domain/quantityThousandths'
 
 export type KitchenOrderStatus =
   | 'RECEIVED'
@@ -80,26 +80,12 @@ const allowedStatuses: readonly string[] = [
  * spelling can be parsed into an exact integer number of thousandths.
  */
 export function toQuantityThousandths(value: number | string): number {
-  if (typeof value === 'number' && !Number.isFinite(value)) {
+  try {
+    return parseQuantityThousandths(value)
+  } catch {
+    // Preserve the existing Production API and its domain-specific error.
     throw new KitchenProductionDataError()
   }
-
-  const decimal = String(value)
-  const parts = /^(0|[1-9]\d{0,8})(?:\.(\d{1,3}))?$/.exec(decimal)
-
-  if (!parts) {
-    throw new KitchenProductionDataError()
-  }
-
-  const whole = Number(parts[1])
-  const fraction = Number((parts[2] ?? '').padEnd(3, '0'))
-  const result = whole * 1000 + fraction
-
-  if (!Number.isSafeInteger(result)) {
-    throw new KitchenProductionDataError()
-  }
-
-  return result
 }
 
 function hasTimestamp(value: unknown): value is string {
