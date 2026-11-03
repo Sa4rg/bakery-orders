@@ -227,6 +227,9 @@ isOneToOne: false
               "id": string,"name": string
             }[]
                            },
+"dispatch_order":
+{ Args: { "p_order_id": string }; Returns: undefined
+                           },
 "mark_order_ready":
 { Args: { "p_order_id": string }; Returns: undefined
                            },

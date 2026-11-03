@@ -34,7 +34,7 @@ const initialQueueState: KitchenQueueSyncState = {
   error: null,
 }
 
-type StatusFilter = 'ALL_ACTIVE' | 'RECEIVED' | 'IN_PROGRESS'
+type StatusFilter = 'ALL_ACTIVE' | 'RECEIVED' | 'IN_PROGRESS' | 'READY'
 
 interface QueuePageProps extends KitchenProductionBoardProps {
   statusFilter: StatusFilter
@@ -48,6 +48,7 @@ interface QueuePageProps extends KitchenProductionBoardProps {
 type Operation =
   | { readonly type: 'start'; readonly orderId: string }
   | { readonly type: 'ready'; readonly orderId: string }
+  | { readonly type: 'dispatch'; readonly orderId: string }
   | { readonly type: 'prepared'; readonly itemId: string; readonly thousandths: number }
   | { readonly type: 'unavailable'; readonly itemId: string; readonly thousandths: number; readonly reason: string }
 
@@ -119,6 +120,9 @@ function KitchenQueuePage({
           break
         case 'ready':
           await commandGateway.markOrderReady(operation.orderId)
+          break
+        case 'dispatch':
+          await commandGateway.dispatchOrder(operation.orderId)
           break
         case 'prepared':
           await commandGateway.recordPreparedQuantity(operation.itemId, operation.thousandths)
@@ -314,6 +318,7 @@ function KitchenOrderCard({ order, canMutate, onCommand }: OrderCardProps) {
   const blocked = deriveKitchenBlockedCondition(order)
   const fulfillment = blocked.fulfillment
   const inProgress = order.status === 'IN_PROGRESS'
+  const [dispatchConfirmationOpen, setDispatchConfirmationOpen] = useState(false)
   return (
     <article className="kitchen-production__order" aria-label={`Production order ${order.orderNumber} for ${order.businessName}`}>
       <h3>Order #{order.orderNumber} — {order.businessName}</h3>
@@ -347,6 +352,27 @@ function KitchenOrderCard({ order, canMutate, onCommand }: OrderCardProps) {
             Mark order #{order.orderNumber} ready
           </button>
         )}
+      {order.status === 'READY' && (
+        dispatchConfirmationOpen ? (
+          <div role="group" aria-label={`Dispatch confirmation for order #${order.orderNumber}`}>
+            <p>Confirm that this READY Order has left production. This cannot be undone here.</p>
+            <button type="button" disabled={!canMutate} onClick={() => {
+              setDispatchConfirmationOpen(false)
+              void onCommand({ type: 'dispatch', orderId: order.id })
+            }}>
+              Confirm dispatch order #{order.orderNumber}
+            </button>
+            <button type="button" onClick={() => setDispatchConfirmationOpen(false)}>
+              Cancel dispatch confirmation
+            </button>
+          </div>
+        ) : (
+          <button type="button" disabled={!canMutate}
+            onClick={() => setDispatchConfirmationOpen(true)}>
+            Dispatch order #{order.orderNumber}
+          </button>
+        )
+      )}
       <ul aria-label={`Items for order ${order.orderNumber}`}>
         {order.items.map((item) => (
           <li key={item.id}>
@@ -473,6 +499,7 @@ export function KitchenProductionBoard(props: KitchenProductionBoardProps) {
         <option value="ALL_ACTIVE">All active</option>
         <option value="RECEIVED">Received</option>
         <option value="IN_PROGRESS">In progress</option>
+        <option value="READY">Ready for dispatch</option>
       </select>
       <KitchenQueuePage
         key={`${statusFilter}:${cursor ?? 'first'}`}

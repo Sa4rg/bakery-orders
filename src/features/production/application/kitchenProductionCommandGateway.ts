@@ -7,6 +7,9 @@ export interface KitchenProductionCommandGateway {
   /** Transition an IN_PROGRESS Order to READY only through the trusted SQL RPC. */
   markOrderReady(orderId: string): Promise<void>
 
+  /** Dispatch READY exactly once, with actor and timestamp resolved by SQL. */
+  dispatchOrder(orderId: string): Promise<void>
+
   /** Positive DELTA in exact integer thousandths, not a replacement total. */
   recordPreparedQuantity(
     orderItemId: string,
@@ -79,5 +82,21 @@ export class KitchenMarkReadyCommandError extends Error {
   constructor() {
     super('Unable to mark order ready.')
     this.name = 'KitchenMarkReadyCommandError'
+  }
+}
+
+/** Reject invalid IDs before requesting the dispatch RPC. */
+export class KitchenDispatchValidationError extends Error {
+  constructor() {
+    super('Order identifier is invalid.')
+    this.name = 'KitchenDispatchValidationError'
+  }
+}
+
+/** Dispatch failed or cannot be confirmed; never leak provider details. */
+export class KitchenDispatchCommandError extends Error {
+  constructor() {
+    super('Unable to confirm order dispatch.')
+    this.name = 'KitchenDispatchCommandError'
   }
 }

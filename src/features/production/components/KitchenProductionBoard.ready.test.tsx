@@ -41,6 +41,7 @@ function setup() {
       recordPreparedQuantity: vi.fn(async () => undefined),
       recordUnavailableQuantity: vi.fn(async () => undefined),
       markOrderReady,
+      dispatchOrder: vi.fn(async () => undefined),
     }}
     queryGateway={{ loadProductionOrder: async () => null }}
   />)

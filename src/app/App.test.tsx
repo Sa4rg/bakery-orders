@@ -62,6 +62,7 @@ const kitchenProductionCommandGateway: KitchenProductionCommandGateway = {
   recordPreparedQuantity: async () => undefined,
   recordUnavailableQuantity: async () => undefined,
   markOrderReady: async () => undefined,
+  dispatchOrder: async () => undefined,
 }
 
 const kitchenOrderQueryGateway: KitchenOrderQueryGateway = {

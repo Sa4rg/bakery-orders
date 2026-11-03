@@ -49,6 +49,7 @@ function renderWithRole(role: AppRole) {
       recordPreparedQuantity: vi.fn(async () => undefined),
       recordUnavailableQuantity: vi.fn(async () => undefined),
       markOrderReady: vi.fn(async () => undefined),
+      dispatchOrder: vi.fn(async () => undefined),
     },
     createKitchenQueueSynchronizer,
   }

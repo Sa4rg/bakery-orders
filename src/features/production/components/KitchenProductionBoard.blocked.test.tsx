@@ -24,6 +24,7 @@ function setup(value: KitchenProductionOrder) {
       start(callback) { emit = callback; return vi.fn() }, refresh: vi.fn(),
     })}
     commandGateway={{ startOrder, markOrderReady,
+      dispatchOrder: vi.fn(async () => undefined),
       recordPreparedQuantity: vi.fn(async () => undefined),
       recordUnavailableQuantity: vi.fn(async () => undefined),
     }}
