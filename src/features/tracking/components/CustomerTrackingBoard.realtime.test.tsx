@@ -28,6 +28,7 @@ function setup() {
     : [])
   const result = render(<CustomerTrackingBoard businessId={businessId}
     realtimeGateway={realtime.gateway}
+    receiptGateway={{ confirmReceipt: async () => undefined }}
     queryGateway={{ loadActiveOrders: list, loadOrder: detail }}
     shortageGateway={{ loadReasons: reasons }} />)
   return { realtime, list, detail, reasons, ...result, update(value: CustomerTrackedOrder) { tracked = value } }

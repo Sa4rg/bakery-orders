@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { CustomerTrackingQueryGateway, CustomerTrackingPage } from '../application/customerTrackingQueryGateway'
+import type { CustomerReceiptGateway } from '../application/customerReceiptGateway'
 import type {
   CustomerShortageReasonsGateway, CustomerShortageReason,
 } from '../application/customerShortageReasonsGateway'
@@ -13,6 +14,7 @@ interface CustomerTrackingBoardProps {
   queryGateway: CustomerTrackingQueryGateway
   shortageGateway: CustomerShortageReasonsGateway
   realtimeGateway: CustomerTrackingRealtimeGateway
+  receiptGateway: CustomerReceiptGateway
   businessId: string
 }
 
@@ -79,26 +81,50 @@ function CustomerOrderItemDetail({
 }
 
 function CustomerTrackingDetail({
-  orderId, realtimeRevision, queryGateway, shortageGateway, onBack,
+  orderId, realtimeRevision, queryGateway, shortageGateway, receiptGateway,
+  onReceiptAttempt, onBack,
 }: {
   orderId: string
   realtimeRevision: number
   queryGateway: CustomerTrackingQueryGateway
   shortageGateway: CustomerShortageReasonsGateway
+  receiptGateway: CustomerReceiptGateway
+  onReceiptAttempt(): void
   onBack(): void
 }) {
   const [revision, setRevision] = useState(0)
   const [response, setResponse] = useState<{ key: string; state: DetailState } | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [receiptBusy, setReceiptBusy] = useState(false)
+  const [receiptFeedback, setReceiptFeedback] = useState<string | null>(null)
+  const receiptInFlight = useRef(false)
+  const receiptNeedsVerification = useRef(false)
+  const activeRef = useRef(true)
   const requestKey = `${orderId}:${revision}:${realtimeRevision}`
   const state: DetailState = response?.key === requestKey ? response.state : { kind: 'loading' }
 
   useEffect(() => {
+    activeRef.current = true
+    return () => { activeRef.current = false }
+  }, [])
+
+  useEffect(() => {
     let active = true
+    const verified = (order: CustomerTrackedOrder | null) => {
+      if (!receiptNeedsVerification.current) return
+      receiptNeedsVerification.current = false
+      receiptInFlight.current = false
+      setReceiptBusy(false)
+      setReceiptFeedback(order?.status === 'DELIVERED'
+        ? 'Receipt confirmed and saved.'
+        : 'Receipt is not confirmed. Review the saved Order before deciding whether to try again.')
+    }
     void (async () => {
       const order = await queryGateway.loadOrder(orderId)
       if (!active) return
       if (order === null) {
         setResponse({ key: requestKey, state: { kind: 'missing' } })
+        verified(null)
         return
       }
       const hasShortages = order.items.some((item) => item.unavailableThousandths > 0)
@@ -109,11 +135,39 @@ function CustomerTrackingDetail({
         throw new Error('Projected shortage reason does not belong to an OrderItem.')
       }
       setResponse({ key: requestKey, state: { kind: 'ready', order, reasons } })
+      verified(order)
     })().catch(() => {
-      if (active) setResponse({ key: requestKey, state: { kind: 'error' } })
+      if (!active) return
+      setResponse({ key: requestKey, state: { kind: 'error' } })
+      if (receiptNeedsVerification.current) {
+        receiptNeedsVerification.current = false
+        receiptInFlight.current = false
+        setReceiptBusy(false)
+        setReceiptFeedback('Unable to verify receipt. Refresh the Order to check its saved status.')
+      }
     })
     return () => { active = false }
   }, [orderId, queryGateway, shortageGateway, requestKey])
+
+  async function confirmReceipt() {
+    if (receiptInFlight.current || state.kind !== 'ready' || state.order.status !== 'DISPATCHED') return
+    receiptInFlight.current = true
+    setReceiptBusy(true)
+    setConfirmOpen(false)
+    setReceiptFeedback(null)
+    try {
+      await receiptGateway.confirmReceipt(orderId)
+    } catch {
+      // A transport error does NOT prove the SQL transaction was rolled back.
+      // Never automatically repeat the trusted command.
+    } finally {
+      if (activeRef.current) {
+        receiptNeedsVerification.current = true
+        setRevision((value) => value + 1)
+        onReceiptAttempt()
+      }
+    }
+  }
 
   return (
     <section aria-label="Selected customer order" className="customer-tracking__detail">
@@ -123,6 +177,8 @@ function CustomerTrackingDetail({
       }}>
         Refresh order details
       </button>
+      {receiptBusy && <p role="status">Checking persisted receipt status…</p>}
+      {receiptFeedback && <p role={receiptFeedback.startsWith('Receipt confirmed') ? 'status' : 'alert'}>{receiptFeedback}</p>}
       {state.kind === 'loading' && <p role="status">Loading tracked order…</p>}
       {state.kind === 'error' && <p role="alert">Unable to load tracked order. Retry the read.</p>}
       {state.kind === 'missing' && <p role="status">Order not found or access denied.</p>}
@@ -135,6 +191,29 @@ function CustomerTrackingDetail({
             <dt>Created</dt><dd>{formatTimestamp(state.order.createdAt)}</dd>
           </dl>
           {state.order.customerNotes && <p>Customer notes: {state.order.customerNotes}</p>}
+          {state.order.status === 'DISPATCHED' && (
+            <section aria-label={`Receipt confirmation for order #${state.order.orderNumber}`}>
+              {!confirmOpen && (
+                <button type="button" disabled={receiptBusy} onClick={() => setConfirmOpen(true)}>
+                  Confirm receipt for order #{state.order.orderNumber}
+                </button>
+              )}
+              {confirmOpen && !receiptBusy && (
+                <>
+                  <p>Confirm that your establishment physically received this dispatched Order.</p>
+                  <button type="button" onClick={() => void confirmReceipt()}>
+                    Yes, received order #{state.order.orderNumber}
+                  </button>
+                  <button type="button" onClick={() => setConfirmOpen(false)}>
+                    Cancel receipt confirmation
+                  </button>
+                </>
+              )}
+            </section>
+          )}
+          {state.order.status === 'DELIVERED' && (
+            <p role="status">This Order has been confirmed delivered.</p>
+          )}
           <ul aria-label={`Tracked items for order #${state.order.orderNumber}`}>
             {state.order.items.map((item) => (
               <CustomerOrderItemDetail key={item.id} item={item} reasons={state.reasons} />
@@ -151,7 +230,7 @@ function CustomerTrackingDetail({
 
 /** M5-003: authorized query refetch after Realtime invalidations. */
 export function CustomerTrackingBoard({
-  queryGateway, shortageGateway, realtimeGateway, businessId,
+  queryGateway, shortageGateway, realtimeGateway, receiptGateway, businessId,
 }: CustomerTrackingBoardProps) {
   const [cursors, setCursors] = useState<readonly (string | null)[]>([null])
   const [revision, setRevision] = useState(0)
@@ -226,6 +305,8 @@ export function CustomerTrackingBoard({
           realtimeRevision={revision}
           queryGateway={queryGateway}
           shortageGateway={shortageGateway}
+          receiptGateway={receiptGateway}
+          onReceiptAttempt={() => synchronizerRef.current?.refresh()}
           onBack={() => setSelectedId(null)}
         />
       ) : (

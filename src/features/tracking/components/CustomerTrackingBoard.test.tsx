@@ -51,7 +51,7 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
     const user = userEvent.setup()
     const { queryGateway, shortageGateway, loadReasons } = fakeGateways()
     render(<CustomerTrackingBoard queryGateway={queryGateway} shortageGateway={shortageGateway}
-      realtimeGateway={realtimeGateway} businessId={businessId} />)
+      realtimeGateway={realtimeGateway} receiptGateway={{ confirmReceipt: async () => undefined }} businessId={businessId} />)
     const button = await screen.findByRole('button', { name: 'View tracking for order #401' })
     expect(screen.getByRole('heading', { name: 'My active orders' })).toBeVisible()
     await user.click(button)
@@ -76,7 +76,7 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
     render(<CustomerTrackingBoard
       queryGateway={{ loadActiveOrders, loadOrder: async () => null }}
       shortageGateway={shortageGateway}
-      realtimeGateway={realtimeGateway} businessId={businessId}
+      realtimeGateway={realtimeGateway} receiptGateway={{ confirmReceipt: async () => undefined }} businessId={businessId}
     />)
     expect(await screen.findByText('No active orders for your establishment.')).toBeVisible()
     expect(loadActiveOrders).toHaveBeenCalledTimes(1)
@@ -96,7 +96,7 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
     render(<CustomerTrackingBoard
       queryGateway={{ loadActiveOrders, loadOrder: async () => null }}
       shortageGateway={shortageGateway}
-      realtimeGateway={realtimeGateway} businessId={businessId}
+      realtimeGateway={realtimeGateway} receiptGateway={{ confirmReceipt: async () => undefined }} businessId={businessId}
     />)
     await screen.findByRole('button', { name: 'View tracking for order #401' })
     const nav = screen.getByRole('navigation', { name: 'Customer tracking pages' })
@@ -115,7 +115,7 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
       query: { loadOrder: async () => null },
     })
     render(<CustomerTrackingBoard queryGateway={queryGateway} shortageGateway={shortageGateway}
-      realtimeGateway={realtimeGateway} businessId={businessId} />)
+      realtimeGateway={realtimeGateway} receiptGateway={{ confirmReceipt: async () => undefined }} businessId={businessId} />)
     await screen.findByRole('button', { name: 'View tracking for order #401' })
     await user.type(screen.getByRole('textbox', { name: 'Find order by ID' }), otherId)
     await user.click(screen.getByRole('button', { name: 'Open tracked order' }))
@@ -132,7 +132,7 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
       }) },
     })
     render(<CustomerTrackingBoard queryGateway={queryGateway} shortageGateway={shortageGateway}
-      realtimeGateway={realtimeGateway} businessId={businessId} />)
+      realtimeGateway={realtimeGateway} receiptGateway={{ confirmReceipt: async () => undefined }} businessId={businessId} />)
     await user.click(await screen.findByRole('button', { name: 'View tracking for order #401' }))
     expect(await screen.findByText('No unavailable quantities recorded.')).toBeVisible()
     expect(loadReasons).not.toHaveBeenCalled()
@@ -146,7 +146,7 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
     render(<CustomerTrackingBoard
       queryGateway={{ loadActiveOrders: async () => ({ orders: [order], nextCursor: null }), loadOrder: async () => pendingOrder }}
       shortageGateway={shortageGateway}
-      realtimeGateway={realtimeGateway} businessId={businessId}
+      realtimeGateway={realtimeGateway} receiptGateway={{ confirmReceipt: async () => undefined }} businessId={businessId}
     />)
     await user.click(await screen.findByRole('button', { name: 'View tracking for order #401' }))
     await user.click(screen.getByRole('button', { name: 'Back to active orders' }))
@@ -159,7 +159,7 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
     render(<CustomerTrackingBoard
       queryGateway={{ loadActiveOrders: async () => { throw new Error('sensitive provider details') }, loadOrder: async () => null }}
       shortageGateway={shortageGateway}
-      realtimeGateway={realtimeGateway} businessId={businessId}
+      realtimeGateway={realtimeGateway} receiptGateway={{ confirmReceipt: async () => undefined }} businessId={businessId}
     />)
     expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load active orders.')
     expect(screen.queryByText('sensitive provider details')).toBeNull()

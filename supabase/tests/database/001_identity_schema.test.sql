@@ -290,6 +290,7 @@ select is(
         'public.record_unavailable_quantity(uuid,numeric,text)'::regprocedure,
         'public.mark_order_ready(uuid)'::regprocedure,
         'public.dispatch_order(uuid)'::regprocedure,
+        'public.confirm_order_receipt(uuid)'::regprocedure,
         'public.get_customer_order_unavailability_reasons(uuid)'::regprocedure
       )
   ),

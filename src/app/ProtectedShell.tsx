@@ -18,6 +18,7 @@ import type { CustomerTrackingQueryGateway } from '../features/tracking/applicat
 import type { CustomerShortageReasonsGateway } from '../features/tracking/application/customerShortageReasonsGateway'
 import { CustomerTrackingBoard } from '../features/tracking/components/CustomerTrackingBoard'
 import type { CustomerTrackingRealtimeGateway } from '../features/tracking/application/customerTrackingRealtimeGateway'
+import type { CustomerReceiptGateway } from '../features/tracking/application/customerReceiptGateway'
 
 interface ProtectedShellProps {
   displayName: string
@@ -31,6 +32,7 @@ interface ProtectedShellProps {
   customerTrackingQueryGateway: CustomerTrackingQueryGateway
   customerShortageReasonsGateway: CustomerShortageReasonsGateway
   customerTrackingRealtimeGateway: CustomerTrackingRealtimeGateway
+  customerReceiptGateway: CustomerReceiptGateway
   kitchenProductionCommandGateway: KitchenProductionCommandGateway
   managerBlockedOrdersGateway: ManagerBlockedOrdersGateway
   kitchenOrderQueryGateway: KitchenOrderQueryGateway
@@ -51,6 +53,7 @@ export function ProtectedShell({
   customerTrackingQueryGateway,
   customerShortageReasonsGateway,
   customerTrackingRealtimeGateway,
+  customerReceiptGateway,
   kitchenProductionCommandGateway,
   managerBlockedOrdersGateway,
   kitchenOrderQueryGateway,
@@ -104,6 +107,7 @@ export function ProtectedShell({
               queryGateway={customerTrackingQueryGateway}
               shortageGateway={customerShortageReasonsGateway}
               realtimeGateway={customerTrackingRealtimeGateway}
+              receiptGateway={customerReceiptGateway}
               businessId={customerBusinessId}
             />
           </>

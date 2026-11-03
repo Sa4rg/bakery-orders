@@ -31,6 +31,8 @@ import type { CustomerShortageReasonsGateway } from '../features/tracking/applic
 import { createSupabaseCustomerShortageReasonsGateway } from '../features/tracking/data/createSupabaseCustomerShortageReasonsGateway'
 import type { CustomerTrackingRealtimeGateway } from '../features/tracking/application/customerTrackingRealtimeGateway'
 import { createSupabaseCustomerTrackingRealtimeGateway } from '../features/tracking/data/createSupabaseCustomerTrackingRealtimeGateway'
+import type { CustomerReceiptGateway } from '../features/tracking/application/customerReceiptGateway'
+import { createSupabaseCustomerReceiptGateway } from '../features/tracking/data/createSupabaseCustomerReceiptGateway'
 
 export type AppBootstrap =
   | {
@@ -44,6 +46,7 @@ export type AppBootstrap =
       customerTrackingQueryGateway: CustomerTrackingQueryGateway
       customerShortageReasonsGateway: CustomerShortageReasonsGateway
       customerTrackingRealtimeGateway: CustomerTrackingRealtimeGateway
+      customerReceiptGateway: CustomerReceiptGateway
       kitchenOrderQueryGateway: KitchenOrderQueryGateway
       kitchenProductionCommandGateway: KitchenProductionCommandGateway
       managerBlockedOrdersGateway: ManagerBlockedOrdersGateway
@@ -77,6 +80,7 @@ export function createAppBootstrap(env: Record<string, unknown>): AppBootstrap {
     customerTrackingQueryGateway: createSupabaseCustomerTrackingQueryGateway(client),
     customerShortageReasonsGateway: createSupabaseCustomerShortageReasonsGateway(client),
     customerTrackingRealtimeGateway: createSupabaseCustomerTrackingRealtimeGateway(client),
+    customerReceiptGateway: createSupabaseCustomerReceiptGateway(client),
     kitchenOrderQueryGateway,
     kitchenProductionCommandGateway: createSupabaseKitchenProductionCommandGateway(client),
     managerBlockedOrdersGateway: createSupabaseManagerBlockedOrdersGateway(client),

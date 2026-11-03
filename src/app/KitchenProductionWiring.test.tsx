@@ -42,6 +42,7 @@ function renderWithRole(role: AppRole) {
     },
     customerShortageReasonsGateway: { loadReasons: async () => [] },
     customerTrackingRealtimeGateway: { subscribe: subscribeTracking },
+    customerReceiptGateway: { confirmReceipt: vi.fn(async () => undefined) },
     kitchenOrderQueryGateway: { loadProductionQueue: async () => ({ orders: [], nextCursor: null }), loadProductionOrder: async () => null },
     managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
     kitchenProductionCommandGateway: {

@@ -43,6 +43,7 @@ describe('createAppBootstrap', () => {
       )
       expect(typeof bootstrap.customerTrackingQueryGateway.loadActiveOrders).toBe('function')
       expect(typeof bootstrap.customerShortageReasonsGateway.loadReasons).toBe('function')
+      expect(typeof bootstrap.customerReceiptGateway.confirmReceipt).toBe('function')
       expect(typeof bootstrap.customerTrackingRealtimeGateway.subscribe).toBe('function')
       expect(typeof bootstrap.kitchenOrderQueryGateway.loadProductionQueue).toBe(
         'function',
