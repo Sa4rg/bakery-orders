@@ -53,6 +53,10 @@ const customerShortageReasonsGateway: CustomerShortageReasonsGateway = {
   loadReasons: async () => [],
 }
 
+const customerTrackingRealtimeGateway = {
+  subscribe: () => () => undefined,
+}
+
 const kitchenProductionCommandGateway: KitchenProductionCommandGateway = {
   startOrder: async () => undefined,
   recordPreparedQuantity: async () => undefined,
@@ -83,6 +87,7 @@ function renderReadyApp(authGateway = createFakeAuthGateway()) {
         customerCancellationGateway,
         customerTrackingQueryGateway,
         customerShortageReasonsGateway,
+        customerTrackingRealtimeGateway,
         kitchenOrderQueryGateway,
         kitchenProductionCommandGateway,
         managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
@@ -256,6 +261,7 @@ describe('App', () => {
           customerCancellationGateway,
           customerTrackingQueryGateway,
           customerShortageReasonsGateway,
+        customerTrackingRealtimeGateway,
           kitchenOrderQueryGateway,
           kitchenProductionCommandGateway,
           managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
@@ -362,6 +368,7 @@ describe('App', () => {
           customerCancellationGateway,
           customerTrackingQueryGateway,
           customerShortageReasonsGateway,
+        customerTrackingRealtimeGateway,
           kitchenOrderQueryGateway,
           kitchenProductionCommandGateway,
           managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },

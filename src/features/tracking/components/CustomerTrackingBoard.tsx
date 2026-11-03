@@ -1,15 +1,19 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { CustomerTrackingQueryGateway, CustomerTrackingPage } from '../application/customerTrackingQueryGateway'
 import type {
   CustomerShortageReasonsGateway, CustomerShortageReason,
 } from '../application/customerShortageReasonsGateway'
 import type { CustomerTrackedOrder, CustomerTrackedItem } from '../domain/customerTrackedOrder'
 import { formatQuantityThousandths } from '../../../shared/domain/quantityThousandths'
+import type { CustomerTrackingRealtimeGateway, CustomerTrackingConnectionStatus } from '../application/customerTrackingRealtimeGateway'
+import { createCustomerTrackingSynchronizer, type CustomerTrackingSynchronizer } from '../application/customerTrackingSynchronization'
 import './customerTrackingBoard.css'
 
 interface CustomerTrackingBoardProps {
   queryGateway: CustomerTrackingQueryGateway
   shortageGateway: CustomerShortageReasonsGateway
+  realtimeGateway: CustomerTrackingRealtimeGateway
+  businessId: string
 }
 
 type PageState =
@@ -75,15 +79,18 @@ function CustomerOrderItemDetail({
 }
 
 function CustomerTrackingDetail({
-  orderId, queryGateway, shortageGateway, onBack,
+  orderId, realtimeRevision, queryGateway, shortageGateway, onBack,
 }: {
   orderId: string
+  realtimeRevision: number
   queryGateway: CustomerTrackingQueryGateway
   shortageGateway: CustomerShortageReasonsGateway
   onBack(): void
 }) {
   const [revision, setRevision] = useState(0)
-  const [state, setState] = useState<DetailState>({ kind: 'loading' })
+  const [response, setResponse] = useState<{ key: string; state: DetailState } | null>(null)
+  const requestKey = `${orderId}:${revision}:${realtimeRevision}`
+  const state: DetailState = response?.key === requestKey ? response.state : { kind: 'loading' }
 
   useEffect(() => {
     let active = true
@@ -91,7 +98,7 @@ function CustomerTrackingDetail({
       const order = await queryGateway.loadOrder(orderId)
       if (!active) return
       if (order === null) {
-        setState({ kind: 'missing' })
+        setResponse({ key: requestKey, state: { kind: 'missing' } })
         return
       }
       const hasShortages = order.items.some((item) => item.unavailableThousandths > 0)
@@ -101,18 +108,17 @@ function CustomerTrackingDetail({
       if (reasons.some((reason) => !itemIds.has(reason.orderItemId))) {
         throw new Error('Projected shortage reason does not belong to an OrderItem.')
       }
-      setState({ kind: 'ready', order, reasons })
+      setResponse({ key: requestKey, state: { kind: 'ready', order, reasons } })
     })().catch(() => {
-      if (active) setState({ kind: 'error' })
+      if (active) setResponse({ key: requestKey, state: { kind: 'error' } })
     })
     return () => { active = false }
-  }, [orderId, queryGateway, shortageGateway, revision])
+  }, [orderId, queryGateway, shortageGateway, requestKey])
 
   return (
     <section aria-label="Selected customer order" className="customer-tracking__detail">
       <button type="button" onClick={onBack}>Back to active orders</button>
       <button type="button" onClick={() => {
-        setState({ kind: 'loading' })
         setRevision((value) => value + 1)
       }}>
         Refresh order details
@@ -143,15 +149,43 @@ function CustomerTrackingDetail({
   )
 }
 
-/** M5-002: manual, persisted CUSTOMER tracking. Realtime is introduced in M5-003. */
-export function CustomerTrackingBoard({ queryGateway, shortageGateway }: CustomerTrackingBoardProps) {
+/** M5-003: authorized query refetch after Realtime invalidations. */
+export function CustomerTrackingBoard({
+  queryGateway, shortageGateway, realtimeGateway, businessId,
+}: CustomerTrackingBoardProps) {
   const [cursors, setCursors] = useState<readonly (string | null)[]>([null])
   const [revision, setRevision] = useState(0)
   const [pageState, setPageState] = useState<PageState>({ kind: 'loading' })
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [orderInput, setOrderInput] = useState('')
   const [lookupError, setLookupError] = useState<string | null>(null)
+  const [connection, setConnection] = useState<CustomerTrackingConnectionStatus>('connecting')
+  const synchronizerRef = useRef<CustomerTrackingSynchronizer | null>(null)
+
   const cursor = cursors[cursors.length - 1] ?? null
+
+  // A distinct subscription is installed for each selected Order. The Orders
+  // stream is Business-scoped, while item changes are Order-scoped and RLS-checked.
+  useEffect(() => {
+    const synchronizer = createCustomerTrackingSynchronizer({
+      realtimeGateway, businessId, ...(selectedId ? { orderId: selectedId } : {}),
+    })
+    synchronizerRef.current = synchronizer
+    let lastRevision = 0
+    const stop = synchronizer.start((next) => {
+      setConnection(next.connection)
+      if (next.revision > lastRevision) {
+        lastRevision = next.revision
+        setPageState({ kind: 'loading' })
+        setCursors([null])
+        setRevision((value) => value + 1)
+      }
+    })
+    return () => {
+      if (synchronizerRef.current === synchronizer) synchronizerRef.current = null
+      stop()
+    }
+  }, [realtimeGateway, businessId, selectedId])
 
   useEffect(() => {
     let active = true
@@ -163,9 +197,7 @@ export function CustomerTrackingBoard({ queryGateway, shortageGateway }: Custome
   }, [queryGateway, cursor, revision])
 
   function refresh() {
-    setPageState({ kind: 'loading' })
-    setCursors([null])
-    setRevision((value) => value + 1)
+    synchronizerRef.current?.refresh()
   }
 
   function openOrderFromId(event: FormEvent<HTMLFormElement>) {
@@ -182,11 +214,16 @@ export function CustomerTrackingBoard({ queryGateway, shortageGateway }: Custome
   return (
     <section className="customer-tracking" aria-labelledby="customer-tracking-heading">
       <h2 id="customer-tracking-heading">My active orders</h2>
-      <p>Tracking is based on saved orders. Refresh to check for changes.</p>
+      <p role="status" aria-live="polite">
+        Realtime: {connection}. {connection === 'connected'
+          ? 'Changes trigger a fresh authorized read.'
+          : 'Tracking may be outdated. You can refresh manually.'}
+      </p>
       {selectedId !== null ? (
         <CustomerTrackingDetail
           key={selectedId}
           orderId={selectedId}
+          realtimeRevision={revision}
           queryGateway={queryGateway}
           shortageGateway={shortageGateway}
           onBack={() => setSelectedId(null)}

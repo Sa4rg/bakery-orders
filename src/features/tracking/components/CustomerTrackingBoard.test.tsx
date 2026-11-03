@@ -5,7 +5,10 @@ import type { CustomerTrackingQueryGateway } from '../application/customerTracki
 import type { CustomerShortageReasonsGateway } from '../application/customerShortageReasonsGateway'
 import type { CustomerTrackedOrder } from '../domain/customerTrackedOrder'
 import { CustomerTrackingBoard } from './CustomerTrackingBoard'
+import { createFakeCustomerTrackingRealtimeGateway } from '../testing/createFakeCustomerTrackingRealtimeGateway'
 
+const businessId = 'a2100000-0000-4000-8000-000000000001'
+const realtimeGateway = createFakeCustomerTrackingRealtimeGateway().gateway
 const id = 'a2200000-0000-4000-8000-000000000001'
 const otherId = 'a2200000-0000-4000-8000-000000000002'
 const itemId = 'a2600000-0000-4000-8000-000000000001'
@@ -47,7 +50,8 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
   it('renders the active list and the exact persisted item progress and shortage reasons', async () => {
     const user = userEvent.setup()
     const { queryGateway, shortageGateway, loadReasons } = fakeGateways()
-    render(<CustomerTrackingBoard queryGateway={queryGateway} shortageGateway={shortageGateway} />)
+    render(<CustomerTrackingBoard queryGateway={queryGateway} shortageGateway={shortageGateway}
+      realtimeGateway={realtimeGateway} businessId={businessId} />)
     const button = await screen.findByRole('button', { name: 'View tracking for order #401' })
     expect(screen.getByRole('heading', { name: 'My active orders' })).toBeVisible()
     await user.click(button)
@@ -72,6 +76,7 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
     render(<CustomerTrackingBoard
       queryGateway={{ loadActiveOrders, loadOrder: async () => null }}
       shortageGateway={shortageGateway}
+      realtimeGateway={realtimeGateway} businessId={businessId}
     />)
     expect(await screen.findByText('No active orders for your establishment.')).toBeVisible()
     expect(loadActiveOrders).toHaveBeenCalledTimes(1)
@@ -91,6 +96,7 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
     render(<CustomerTrackingBoard
       queryGateway={{ loadActiveOrders, loadOrder: async () => null }}
       shortageGateway={shortageGateway}
+      realtimeGateway={realtimeGateway} businessId={businessId}
     />)
     await screen.findByRole('button', { name: 'View tracking for order #401' })
     const nav = screen.getByRole('navigation', { name: 'Customer tracking pages' })
@@ -108,7 +114,8 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
     const { queryGateway, shortageGateway } = fakeGateways({
       query: { loadOrder: async () => null },
     })
-    render(<CustomerTrackingBoard queryGateway={queryGateway} shortageGateway={shortageGateway} />)
+    render(<CustomerTrackingBoard queryGateway={queryGateway} shortageGateway={shortageGateway}
+      realtimeGateway={realtimeGateway} businessId={businessId} />)
     await screen.findByRole('button', { name: 'View tracking for order #401' })
     await user.type(screen.getByRole('textbox', { name: 'Find order by ID' }), otherId)
     await user.click(screen.getByRole('button', { name: 'Open tracked order' }))
@@ -124,7 +131,8 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
         items: [{ ...order.items[0]!, unavailableThousandths: 0, remainingThousandths: 1875 }],
       }) },
     })
-    render(<CustomerTrackingBoard queryGateway={queryGateway} shortageGateway={shortageGateway} />)
+    render(<CustomerTrackingBoard queryGateway={queryGateway} shortageGateway={shortageGateway}
+      realtimeGateway={realtimeGateway} businessId={businessId} />)
     await user.click(await screen.findByRole('button', { name: 'View tracking for order #401' }))
     expect(await screen.findByText('No unavailable quantities recorded.')).toBeVisible()
     expect(loadReasons).not.toHaveBeenCalled()
@@ -138,6 +146,7 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
     render(<CustomerTrackingBoard
       queryGateway={{ loadActiveOrders: async () => ({ orders: [order], nextCursor: null }), loadOrder: async () => pendingOrder }}
       shortageGateway={shortageGateway}
+      realtimeGateway={realtimeGateway} businessId={businessId}
     />)
     await user.click(await screen.findByRole('button', { name: 'View tracking for order #401' }))
     await user.click(screen.getByRole('button', { name: 'Back to active orders' }))
@@ -150,6 +159,7 @@ describe('M5-002 CUSTOMER Tracking UI', () => {
     render(<CustomerTrackingBoard
       queryGateway={{ loadActiveOrders: async () => { throw new Error('sensitive provider details') }, loadOrder: async () => null }}
       shortageGateway={shortageGateway}
+      realtimeGateway={realtimeGateway} businessId={businessId}
     />)
     expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load active orders.')
     expect(screen.queryByText('sensitive provider details')).toBeNull()

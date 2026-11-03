@@ -15,6 +15,8 @@ function renderWithRole(role: AppRole) {
   })
   const catalogGateway = createFakeCatalogGateway([{ categories: [], products: [] }]).gateway
   const dispose = vi.fn()
+  const disposeTracking = vi.fn()
+  const subscribeTracking = vi.fn(() => disposeTracking)
   const createKitchenQueueSynchronizer = vi.fn(() => ({
     start: vi.fn((callback: (state: KitchenQueueSyncState) => void) => {
       callback({ connection: 'connected', stale: false, loading: false, error: null,
@@ -39,6 +41,7 @@ function renderWithRole(role: AppRole) {
       loadOrder: async () => null,
     },
     customerShortageReasonsGateway: { loadReasons: async () => [] },
+    customerTrackingRealtimeGateway: { subscribe: subscribeTracking },
     kitchenOrderQueryGateway: { loadProductionQueue: async () => ({ orders: [], nextCursor: null }), loadProductionOrder: async () => null },
     managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
     kitchenProductionCommandGateway: {
@@ -51,10 +54,30 @@ function renderWithRole(role: AppRole) {
   }
   const view = render(<App bootstrap={bootstrap} />)
   act(() => authGateway.emit({ userId: customerUserId }))
-  return { ...view, authGateway, createKitchenQueueSynchronizer, dispose }
+  return { ...view, authGateway, createKitchenQueueSynchronizer, dispose,
+    subscribeTracking, disposeTracking }
 }
 
 describe('Kitchen production application wiring (M4-006C)', () => {
+  it('installs CUSTOMER Tracking subscription only for CUSTOMER and cleans up at sign out', async () => {
+    const h = renderWithRole('CUSTOMER')
+    await screen.findByRole('heading', { name: 'My active orders' })
+    await waitFor(() => expect(h.subscribeTracking).toHaveBeenCalledTimes(1))
+    expect(h.subscribeTracking).toHaveBeenCalledWith(
+      expect.objectContaining({ businessId: buildMembership().businessId }),
+      expect.any(Object),
+    )
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Sign out' }))
+    await waitFor(() => expect(h.disposeTracking).toHaveBeenCalledTimes(1))
+    expect(await screen.findByLabelText('Email')).toBeVisible()
+  })
+
+  it.each(['KITCHEN', 'MANAGER'] as const)('never installs CUSTOMER Tracking subscription for %s', async (role) => {
+    const h = renderWithRole(role)
+    await screen.findByText('Application foundation ready.')
+    expect(h.subscribeTracking).not.toHaveBeenCalled()
+  })
+
   it('starts the queue only in the authorized KITCHEN shell and stops it at logout', async () => {
     const h = renderWithRole('KITCHEN')
     expect(await screen.findByRole('heading', { name: 'Kitchen production' })).toBeVisible()

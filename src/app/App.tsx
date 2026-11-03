@@ -39,6 +39,7 @@ export default function App({ bootstrap }: AppProps) {
                 customerCancellationGateway={bootstrap.customerCancellationGateway}
                 customerTrackingQueryGateway={bootstrap.customerTrackingQueryGateway}
                 customerShortageReasonsGateway={bootstrap.customerShortageReasonsGateway}
+                customerTrackingRealtimeGateway={bootstrap.customerTrackingRealtimeGateway}
                 kitchenProductionCommandGateway={bootstrap.kitchenProductionCommandGateway}
                 managerBlockedOrdersGateway={bootstrap.managerBlockedOrdersGateway}
                 kitchenOrderQueryGateway={bootstrap.kitchenOrderQueryGateway}

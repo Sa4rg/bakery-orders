@@ -17,6 +17,7 @@ import { ManagerBlockedOrdersInbox } from '../features/production/components/Man
 import type { CustomerTrackingQueryGateway } from '../features/tracking/application/customerTrackingQueryGateway'
 import type { CustomerShortageReasonsGateway } from '../features/tracking/application/customerShortageReasonsGateway'
 import { CustomerTrackingBoard } from '../features/tracking/components/CustomerTrackingBoard'
+import type { CustomerTrackingRealtimeGateway } from '../features/tracking/application/customerTrackingRealtimeGateway'
 
 interface ProtectedShellProps {
   displayName: string
@@ -29,6 +30,7 @@ interface ProtectedShellProps {
   customerCancellationGateway: CustomerCancellationGateway
   customerTrackingQueryGateway: CustomerTrackingQueryGateway
   customerShortageReasonsGateway: CustomerShortageReasonsGateway
+  customerTrackingRealtimeGateway: CustomerTrackingRealtimeGateway
   kitchenProductionCommandGateway: KitchenProductionCommandGateway
   managerBlockedOrdersGateway: ManagerBlockedOrdersGateway
   kitchenOrderQueryGateway: KitchenOrderQueryGateway
@@ -48,6 +50,7 @@ export function ProtectedShell({
   customerCancellationGateway,
   customerTrackingQueryGateway,
   customerShortageReasonsGateway,
+  customerTrackingRealtimeGateway,
   kitchenProductionCommandGateway,
   managerBlockedOrdersGateway,
   kitchenOrderQueryGateway,
@@ -97,8 +100,11 @@ export function ProtectedShell({
             businessId={customerBusinessId}
           />
             <CustomerTrackingBoard
+              key={customerBusinessId}
               queryGateway={customerTrackingQueryGateway}
               shortageGateway={customerShortageReasonsGateway}
+              realtimeGateway={customerTrackingRealtimeGateway}
+              businessId={customerBusinessId}
             />
           </>
         )
