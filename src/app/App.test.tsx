@@ -15,6 +15,8 @@ import type { CreateOrderGateway } from '../features/orders/application/createOr
 
 import App from './App'
 import type { CustomerCancellationGateway } from '../features/orders/application/customerCancellationGateway'
+import type { CustomerTrackingQueryGateway } from '../features/tracking/application/customerTrackingQueryGateway'
+import type { CustomerShortageReasonsGateway } from '../features/tracking/application/customerShortageReasonsGateway'
 import type { KitchenOrderQueryGateway } from '../features/production/application/kitchenOrderQueryGateway'
 import type { KitchenProductionCommandGateway } from '../features/production/application/kitchenProductionCommandGateway'
 
@@ -40,6 +42,15 @@ const createOrderGateway: CreateOrderGateway = {
 const customerCancellationGateway:
   CustomerCancellationGateway = {
     cancelOrder: async () => undefined,
+}
+
+const customerTrackingQueryGateway: CustomerTrackingQueryGateway = {
+  loadActiveOrders: async () => ({ orders: [], nextCursor: null }),
+  loadOrder: async () => null,
+}
+
+const customerShortageReasonsGateway: CustomerShortageReasonsGateway = {
+  loadReasons: async () => [],
 }
 
 const kitchenProductionCommandGateway: KitchenProductionCommandGateway = {
@@ -70,6 +81,8 @@ function renderReadyApp(authGateway = createFakeAuthGateway()) {
         productAvailabilityGateway,
         createOrderGateway,
         customerCancellationGateway,
+        customerTrackingQueryGateway,
+        customerShortageReasonsGateway,
         kitchenOrderQueryGateway,
         kitchenProductionCommandGateway,
         managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
@@ -241,6 +254,8 @@ describe('App', () => {
           productAvailabilityGateway: availabilityGateway,
           createOrderGateway,
           customerCancellationGateway,
+          customerTrackingQueryGateway,
+          customerShortageReasonsGateway,
           kitchenOrderQueryGateway,
           kitchenProductionCommandGateway,
           managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
@@ -345,6 +360,8 @@ describe('App', () => {
           productAvailabilityGateway: availabilityGateway,
           createOrderGateway,
           customerCancellationGateway,
+          customerTrackingQueryGateway,
+          customerShortageReasonsGateway,
           kitchenOrderQueryGateway,
           kitchenProductionCommandGateway,
           managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },

@@ -16,3 +16,10 @@ export function parseQuantityThousandths(value: number | string): number {
   if (!Number.isSafeInteger(result)) throw new QuantityPrecisionError()
   return result
 }
+
+/** Display exact integer thousandths without converting through binary floats. */
+export function formatQuantityThousandths(thousandths: number): string {
+  const whole = Math.floor(thousandths / 1000)
+  const decimal = String(thousandths % 1000).padStart(3, '0').replace(/0+$/, '')
+  return decimal ? `${whole}.${decimal}` : String(whole)
+}

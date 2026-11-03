@@ -14,6 +14,9 @@ import type { KitchenQueueSynchronizer } from '../features/production/applicatio
 import { KitchenProductionBoard } from '../features/production/components/KitchenProductionBoard'
 import type { ManagerBlockedOrdersGateway } from '../features/production/application/managerBlockedOrdersGateway'
 import { ManagerBlockedOrdersInbox } from '../features/production/components/ManagerBlockedOrdersInbox'
+import type { CustomerTrackingQueryGateway } from '../features/tracking/application/customerTrackingQueryGateway'
+import type { CustomerShortageReasonsGateway } from '../features/tracking/application/customerShortageReasonsGateway'
+import { CustomerTrackingBoard } from '../features/tracking/components/CustomerTrackingBoard'
 
 interface ProtectedShellProps {
   displayName: string
@@ -24,6 +27,8 @@ interface ProtectedShellProps {
   productAvailabilityGateway: ProductAvailabilityGateway
   createOrderGateway: CreateOrderGateway
   customerCancellationGateway: CustomerCancellationGateway
+  customerTrackingQueryGateway: CustomerTrackingQueryGateway
+  customerShortageReasonsGateway: CustomerShortageReasonsGateway
   kitchenProductionCommandGateway: KitchenProductionCommandGateway
   managerBlockedOrdersGateway: ManagerBlockedOrdersGateway
   kitchenOrderQueryGateway: KitchenOrderQueryGateway
@@ -41,6 +46,8 @@ export function ProtectedShell({
   productAvailabilityGateway,
   createOrderGateway,
   customerCancellationGateway,
+  customerTrackingQueryGateway,
+  customerShortageReasonsGateway,
   kitchenProductionCommandGateway,
   managerBlockedOrdersGateway,
   kitchenOrderQueryGateway,
@@ -80,7 +87,8 @@ export function ProtectedShell({
             ordering.
           </p>
         ) : (
-          <CustomerOrderBuilder
+          <>
+            <CustomerOrderBuilder
             catalogGateway={catalogGateway}
             createOrderGateway={
               createOrderGateway
@@ -88,6 +96,11 @@ export function ProtectedShell({
             customerCancellationGateway={customerCancellationGateway}
             businessId={customerBusinessId}
           />
+            <CustomerTrackingBoard
+              queryGateway={customerTrackingQueryGateway}
+              shortageGateway={customerShortageReasonsGateway}
+            />
+          </>
         )
       )}
       {role === 'KITCHEN' && (

@@ -34,6 +34,11 @@ function renderWithRole(role: AppRole) {
     productAvailabilityGateway: { setAvailability: async (_id, available) => available },
     createOrderGateway: { createOrder: async () => '00000000-0000-4000-8000-000000000001' },
     customerCancellationGateway: { cancelOrder: async () => undefined },
+    customerTrackingQueryGateway: {
+      loadActiveOrders: async () => ({ orders: [], nextCursor: null }),
+      loadOrder: async () => null,
+    },
+    customerShortageReasonsGateway: { loadReasons: async () => [] },
     kitchenOrderQueryGateway: { loadProductionQueue: async () => ({ orders: [], nextCursor: null }), loadProductionOrder: async () => null },
     managerBlockedOrdersGateway: { loadPage: async () => ({ incidents: [], hasNextPage: false }) },
     kitchenProductionCommandGateway: {

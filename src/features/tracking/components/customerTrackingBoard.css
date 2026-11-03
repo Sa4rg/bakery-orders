@@ -1,0 +1,30 @@
+.customer-tracking {
+  margin-block: 2rem;
+  padding: 1.25rem;
+  border: 1px solid #a8b6ac;
+  border-radius: 0.75rem;
+}
+
+.customer-tracking__orders,
+.customer-tracking__detail ul {
+  list-style: none;
+  padding-inline-start: 0;
+}
+
+.customer-tracking__orders > li,
+.customer-tracking__item {
+  margin-block: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #b8c2ba;
+  border-radius: 0.5rem;
+}
+
+.customer-tracking dl {
+  display: grid;
+  grid-template-columns: minmax(9rem, auto) 1fr;
+  gap: 0.375rem 1rem;
+}
+
+.customer-tracking dd { margin: 0; }
+.customer-tracking button { margin: 0.35rem 0.45rem 0.35rem 0; }
+.customer-tracking__item li { margin-block: 0.35rem; }
