@@ -36,6 +36,8 @@ export function subscribeToOrderChanges(
 
   let active = true
   let latest: OrderChangesConnectionStatus | null = null
+  let channelJoined = false
+  let postgresChangesReady = false
   const channel = client.channel(`${name}-${++channelSerial}`)
   const status = (value: OrderChangesConnectionStatus) => {
     if (active && latest !== value) {
@@ -54,6 +56,18 @@ export function subscribeToOrderChanges(
 
   try {
     status('connecting')
+    // SUBSCRIBED acknowledges the channel join, not necessarily the database
+    // change subscription. Wait for its independent server acknowledgement.
+    channel.on('system', {}, (payload) => {
+      if (!active || payload?.extension !== 'postgres_changes') return
+      if (payload.status === 'ok') {
+        postgresChangesReady = true
+        if (channelJoined) status('connected')
+      } else if (payload.status === 'error' || payload.status === 'timeout') {
+        postgresChangesReady = false
+        status('disconnected')
+      }
+    })
     // KITCHEN keeps its legacy unfiltered subscription; CUSTOMER restricts
     // order changes to the active Business, and item changes to the detail.
     const ordersFilter = scope.businessId ? { filter: `business_id=eq.${scope.businessId}` } : {}
@@ -67,8 +81,16 @@ export function subscribeToOrderChanges(
       }
     }
     channel.subscribe((value) => {
-      if (value === 'SUBSCRIBED') status('connected')
-      else if (value === 'CHANNEL_ERROR' || value === 'TIMED_OUT' || value === 'CLOSED') status('disconnected')
+      if (!active) return
+      if (value === 'SUBSCRIBED') {
+        channelJoined = true
+        // A late system acknowledgement is still required after a new join.
+        status(postgresChangesReady ? 'connected' : 'connecting')
+      } else if (value === 'CHANNEL_ERROR' || value === 'TIMED_OUT' || value === 'CLOSED') {
+        channelJoined = false
+        postgresChangesReady = false
+        status('disconnected')
+      }
     })
   } catch {
     dispose()

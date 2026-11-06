@@ -11,12 +11,18 @@ function fakeClient() {
   const filters: Filter[] = []
   const callbacks: Array<() => void> = []
   let subscribeStatus: ((status: Status) => void) | undefined
+  let systemListener: ((payload: { extension: string; status: string }) => void) | undefined
   let removed = 0
   const channel = {
-    on(_type: string, filter: Filter, callback: () => void) {
-      expect(_type).toBe('postgres_changes')
-      filters.push(filter)
-      callbacks.push(callback)
+    on(type: string, filter: Partial<Filter>, callback: (...args: unknown[]) => void) {
+      if (type === 'system') {
+        expect(filter).toEqual({})
+        systemListener = (payload) => callback(payload)
+        return channel
+      }
+      expect(type).toBe('postgres_changes')
+      filters.push(filter as Filter)
+      callbacks.push(() => callback())
       return channel
     },
     subscribe(callback: (status: Status) => void) { subscribeStatus = callback; return channel },
@@ -30,6 +36,7 @@ function fakeClient() {
     filters,
     emitChange() { for (const callback of callbacks) callback() },
     status(value: Status) { subscribeStatus?.(value) },
+    ready(value: 'ok' | 'error') { systemListener?.({ extension: 'postgres_changes', status: value }) },
     get removed() { return removed },
   }
 }
@@ -48,6 +55,8 @@ describe('M5-003 customer Postgres Changes transport', () => {
       { table: 'orders', schema: 'public', event: 'UPDATE', filter: `business_id=eq.${businessId}` },
     ])
     fake.status('SUBSCRIBED')
+    expect(statuses).toEqual(['connecting'])
+    fake.ready('ok')
     fake.emitChange()
     expect(changes).toHaveLength(2)
     expect(statuses).toEqual(['connecting', 'connected'])
@@ -68,13 +77,17 @@ describe('M5-003 customer Postgres Changes transport', () => {
       { table: 'order_items', schema: 'public', event: 'UPDATE', filter: `order_id=eq.${orderId}` },
     ])
     fake.status('SUBSCRIBED')
+    fake.ready('ok')
     fake.status('CHANNEL_ERROR')
     fake.status('TIMED_OUT')
     fake.status('SUBSCRIBED')
-    expect(statuses).toEqual(['connecting', 'connected', 'disconnected', 'connected'])
+    expect(statuses).toEqual(['connecting', 'connected', 'disconnected', 'connecting'])
+    fake.ready('ok')
+    expect(statuses).toEqual(['connecting', 'connected', 'disconnected', 'connecting', 'connected'])
     stop(); stop()
     fake.emitChange()
     fake.status('SUBSCRIBED')
+    fake.ready('ok')
     await Promise.resolve(); await Promise.resolve()
     expect(invalidations).toBe(0)
     expect(fake.removed).toBe(1)
