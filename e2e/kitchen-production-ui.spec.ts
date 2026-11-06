@@ -106,16 +106,23 @@ async function observeReadyOutcome(
  */
 async function findOrderOnProductionPages(page: Page, view: Locator): Promise<void> {
   const fresh = page.getByText('Realtime: connected. Queue up to date.', { exact: true })
+  const refreshing = page.getByText('Refreshing production orders…', { exact: true })
   const next = page.getByRole('navigation', { name: 'Production pages' })
     .getByRole('button', { name: 'Next page' })
 
   for (let pageIndex = 0; pageIndex < 100; pageIndex += 1) {
-    // Wait for each cursor's authorized, authoritative read to finish.
-    await expect(fresh).toBeVisible({ timeout: 20_000 })
+    // The Next button is also disabled while a Realtime invalidation is being
+    // refetched. Never interpret that transient state as the end of pagination.
+    // This is read-only polling: no queue refresh or command is retried.
+    await expect.poll(async () => {
+      if (!(await fresh.isVisible()) || await refreshing.isVisible()) return false
+      return await view.isVisible() || await next.isEnabled()
+    }, {
+      timeout: 20_000,
+      message: `Order not found and no usable next page after page ${pageIndex + 1} of the production filter.`,
+    }).toBe(true)
     if (await view.isVisible()) return
-    if (!(await next.isEnabled())) {
-      throw new Error(`Production Order was not found after ${pageIndex + 1} page(s) of this filter.`)
-    }
+    await expect(next).toBeEnabled({ timeout: 20_000 })
     await next.click()
   }
   throw new Error('Production queue exceeded the 100-page test bound.')
