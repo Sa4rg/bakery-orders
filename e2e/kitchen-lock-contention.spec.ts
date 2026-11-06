@@ -1,59 +1,25 @@
-import { spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
-import { Client } from 'pg'
 import type { Database } from '../src/lib/supabase/database.types.ts'
 import type { SupabaseBrowserClient } from '../src/lib/supabase/client.ts'
 import { createSupabaseKitchenOrderQueryGateway } from '../src/features/production/data/createSupabaseKitchenOrderQueryGateway.ts'
 import { customerOrderingFixture, fixtureBusinesses, fixtureCredentials } from './support/fixtures.ts'
 import { getLocalSupabasePublicConfig } from './support/localSupabase.ts'
+import { contend, type Command, type Outcome } from './support/pgContention.ts'
 
 /**
- * DB sessions are local, test-only PostgreSQL connections. Production RPCs
- * are executed as `authenticated` with fixture actor claims, not as postgres.
- * The existing kitchen-concurrency.spec.ts separately proves real JWT/HTTP
- * behavior; these tests prove actual transaction blocking deterministically.
+ * DB contention is delegated to the shared local-only helper.
+ * Existing concurrency HTTP tests separately exercise real JWT sessions.
+ * These scenarios retain their original deterministic blocking assertions.
  */
 
 type Role = 'customerA' | 'kitchen'
-type Outcome = { ok: true; code: null } | { ok: false; code: string | null }
-type Command = { sql: string; args: (string | number)[] }
 type Actors = {
   customer: SupabaseBrowserClient
   kitchen: SupabaseBrowserClient
   customerId: string
   kitchenId: string
-}
-
-let cachedLocalDatabaseUrl: string | undefined
-
-function localDatabaseUrl(): string {
-  if (cachedLocalDatabaseUrl) return cachedLocalDatabaseUrl
-
-  const status = spawnSync('pnpm', ['exec', 'supabase', 'status', '-o', 'env'], {
-    encoding: 'utf8',
-    shell: process.platform === 'win32',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  })
-  if (status.error || status.status !== 0) {
-    throw new Error('Local Supabase must be running for M4-010 database contention tests.')
-  }
-  const entry = status.stdout.split(/\r?\n/)
-    .map((line) => /^DB_URL=(.*)$/.exec(line.trim())?.[1])
-    .find((value) => value !== undefined)
-  if (!entry) throw new Error('Local Supabase status did not provide DB_URL.')
-  const raw = entry.replace(/^"|"$/g, '')
-  let url: URL
-  try { url = new URL(raw) } catch {
-    throw new Error('Local Supabase returned an invalid database URL.')
-  }
-  if (!['postgres:', 'postgresql:'].includes(url.protocol) ||
-      !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) {
-    throw new Error('Refusing database contention tests against a non-loopback PostgreSQL endpoint.')
-  }
-  cachedLocalDatabaseUrl = raw
-  return raw
 }
 
 async function signIn(role: Role): Promise<{ client: SupabaseBrowserClient; id: string }> {
@@ -114,24 +80,6 @@ async function readState(actors: Actors, orderId: string, itemId: string) {
   return { order: order.data, item: item.data, events: events.data }
 }
 
-async function beginAs(client: Client, actorId: string) {
-  await client.query('BEGIN')
-  await client.query('SET LOCAL ROLE authenticated')
-  await client.query("SELECT pg_catalog.set_config('request.jwt.claim.sub', $1, true)", [actorId])
-  await client.query("SELECT pg_catalog.set_config('request.jwt.claim.role', 'authenticated', true)")
-}
-
-async function run(client: Client, command: Command): Promise<Outcome> {
-  try {
-    await client.query(command.sql, command.args)
-    return { ok: true, code: null }
-  } catch (error: unknown) {
-    const code = error && typeof error === 'object' && 'code' in error &&
-      typeof error.code === 'string' ? error.code : null
-    return { ok: false, code }
-  }
-}
-
 const prepared = (itemId: string, delta: number): Command => ({
   sql: 'SELECT public.record_prepared_quantity($1::uuid, $2::numeric)', args: [itemId, delta],
 })
@@ -149,86 +97,6 @@ const cancel = (orderId: string): Command => ({
 const ready = (orderId: string): Command => ({
   sql: 'SELECT public.mark_order_ready($1::uuid)', args: [orderId],
 })
-
-/**
- * Enforce a particular serialization: first SQL transaction has executed but
- * NOT committed. The second trusted RPC is observed blocked by its backend PID
- * (pg_blocking_pids), then the first commits and the second resumes.
- * No sleep, artificial timeout, or second invocation of a command is used.
- *
- * `preserveLockOnFailure` is reserved for READY-first: the expected rejection
- * aborts its statement, so we acquire the Order lock BEFORE a SAVEPOINT and
- * roll back only the failed statement, retaining that pre-savepoint lock.
- */
-async function contend(args: {
-  orderId: string
-  firstActorId: string
-  secondActorId: string
-  firstCommand: Command
-  secondCommand: Command
-  preserveLockOnFailure?: boolean
-}): Promise<{ first: Outcome; second: Outcome }> {
-  const connectionString = localDatabaseUrl()
-  const firstDb = new Client({ connectionString, application_name: 'm4_010_first' })
-  const secondDb = new Client({ connectionString, application_name: 'm4_010_second' })
-  const observer = new Client({ connectionString, application_name: 'm4_010_observer' })
-  const clients = [firstDb, secondDb, observer]
-  let firstCommitted = false
-  let secondPending: Promise<Outcome> | undefined
-
-  try {
-    await Promise.all(clients.map((client) => client.connect()))
-    await beginAs(firstDb, args.firstActorId)
-    await beginAs(secondDb, args.secondActorId)
-    const firstPidResult = await firstDb.query<{ pid: number }>('SELECT pg_catalog.pg_backend_pid() AS pid')
-    const secondPidResult = await secondDb.query<{ pid: number }>('SELECT pg_catalog.pg_backend_pid() AS pid')
-    const firstPid = firstPidResult.rows[0]!.pid
-    const secondPid = secondPidResult.rows[0]!.pid
-
-    if (args.preserveLockOnFailure) {
-      // SELECT ... FOR UPDATE requires UPDATE privileges, intentionally denied
-      // to `authenticated`. Acquire only the test's pre-savepoint lock as the
-      // local database owner; restore the actor role BEFORE running READY.
-      await firstDb.query('SET LOCAL ROLE postgres')
-      const locked = await firstDb.query('SELECT id FROM public.orders WHERE id = $1::uuid FOR UPDATE', [args.orderId])
-      expect(locked.rowCount).toBe(1)
-      await firstDb.query('SET LOCAL ROLE authenticated')
-      await firstDb.query('SAVEPOINT before_command')
-    }
-
-    const first = await run(firstDb, args.firstCommand)
-    if (!first.ok && args.preserveLockOnFailure) {
-      await firstDb.query('ROLLBACK TO SAVEPOINT before_command')
-    } else if (!first.ok) {
-      throw new Error(`Unexpected failure of the first trusted command: ${first.code ?? 'unknown SQLSTATE'}`)
-    }
-
-    // Fire the second query but do not await it while the first owns the lock.
-    secondPending = run(secondDb, args.secondCommand)
-    await expect.poll(async () => {
-      const result = await observer.query<{ wait_event_type: string | null; blockers: number[] }>(
-        `SELECT wait_event_type, pg_catalog.pg_blocking_pids(pid) AS blockers
-         FROM pg_catalog.pg_stat_activity WHERE pid = $1::integer`,
-        [secondPid],
-      )
-      const activity = result.rows[0]
-      return activity?.wait_event_type === 'Lock' && activity.blockers.includes(firstPid)
-    }, { timeout: 15_000, intervals: [50, 100, 200, 400] }).toBe(true)
-
-    await firstDb.query('COMMIT')
-    firstCommitted = true
-    const second = await secondPending
-    await secondDb.query(second.ok ? 'COMMIT' : 'ROLLBACK')
-    secondPending = undefined
-    return { first, second }
-  } finally {
-    if (!firstCommitted) await firstDb.query('ROLLBACK').catch(() => undefined)
-    // Release blocking transactions before closing connections.
-    await secondDb.query('ROLLBACK').catch(() => undefined)
-    if (secondPending) await secondPending.catch(() => undefined)
-    await Promise.allSettled(clients.map((client) => client.end()))
-  }
-}
 
 function expectFirstWins(result: { first: Outcome; second: Outcome }) {
   expect(result.first).toEqual({ ok: true, code: null })

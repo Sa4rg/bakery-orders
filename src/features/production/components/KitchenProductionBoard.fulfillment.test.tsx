@@ -43,6 +43,7 @@ function setup() {
       recordPreparedQuantity: vi.fn(async () => undefined),
       recordUnavailableQuantity: vi.fn(async () => undefined),
       markOrderReady: vi.fn(async () => undefined),
+      dispatchOrder: vi.fn(async () => undefined),
     }}
   />)
   return (order: KitchenProductionOrder) => {

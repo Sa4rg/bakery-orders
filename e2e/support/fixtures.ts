@@ -71,6 +71,8 @@ export type FixtureKey =
   | 'customerA'
   | 'customerB'
   | 'kitchen'
+  | 'kitchenSecond'
+  | 'customerAColleague'
   | 'manager'
   | 'noProfile'
   | 'inactiveProfile'
@@ -102,6 +104,18 @@ export const fixtureIdentities: Record<FixtureKey, FixtureIdentity> = {
     displayName: 'E2E Kitchen',
     profile: { role: 'KITCHEN', active: true },
     membership: null,
+  },
+  kitchenSecond: {
+    email: 'e2e.kitchen-second@bakery-e2e.test',
+    displayName: 'E2E Second Kitchen',
+    profile: { role: 'KITCHEN', active: true },
+    membership: null,
+  },
+  customerAColleague: {
+    email: 'e2e.customer-a-colleague@bakery-e2e.test',
+    displayName: 'E2E Customer A Colleague',
+    profile: { role: 'CUSTOMER', active: true },
+    membership: { business: 'A', active: true },
   },
   manager: {
     email: 'e2e.manager@bakery-e2e.test',
@@ -210,7 +224,8 @@ async function findFixtureUserIds(admin: LocalAdminClient): Promise<string[]> {
     }
 
     for (const user of data.users) {
-      if (user.email && fixtureEmails.has(user.email.toLowerCase())) {
+      if (user.email && (fixtureEmails.has(user.email.toLowerCase()) ||
+        /^m5-006-race-[0-9a-f-]{36}@bakery-e2e\.test$/i.test(user.email))) {
         ids.push(user.id)
       }
     }

@@ -14,6 +14,11 @@ import type { KitchenQueueSynchronizer } from '../features/production/applicatio
 import { KitchenProductionBoard } from '../features/production/components/KitchenProductionBoard'
 import type { ManagerBlockedOrdersGateway } from '../features/production/application/managerBlockedOrdersGateway'
 import { ManagerBlockedOrdersInbox } from '../features/production/components/ManagerBlockedOrdersInbox'
+import type { CustomerTrackingQueryGateway } from '../features/tracking/application/customerTrackingQueryGateway'
+import type { CustomerShortageReasonsGateway } from '../features/tracking/application/customerShortageReasonsGateway'
+import { CustomerTrackingBoard } from '../features/tracking/components/CustomerTrackingBoard'
+import type { CustomerTrackingRealtimeGateway } from '../features/tracking/application/customerTrackingRealtimeGateway'
+import type { CustomerReceiptGateway } from '../features/tracking/application/customerReceiptGateway'
 
 interface ProtectedShellProps {
   displayName: string
@@ -24,6 +29,10 @@ interface ProtectedShellProps {
   productAvailabilityGateway: ProductAvailabilityGateway
   createOrderGateway: CreateOrderGateway
   customerCancellationGateway: CustomerCancellationGateway
+  customerTrackingQueryGateway: CustomerTrackingQueryGateway
+  customerShortageReasonsGateway: CustomerShortageReasonsGateway
+  customerTrackingRealtimeGateway: CustomerTrackingRealtimeGateway
+  customerReceiptGateway: CustomerReceiptGateway
   kitchenProductionCommandGateway: KitchenProductionCommandGateway
   managerBlockedOrdersGateway: ManagerBlockedOrdersGateway
   kitchenOrderQueryGateway: KitchenOrderQueryGateway
@@ -41,6 +50,10 @@ export function ProtectedShell({
   productAvailabilityGateway,
   createOrderGateway,
   customerCancellationGateway,
+  customerTrackingQueryGateway,
+  customerShortageReasonsGateway,
+  customerTrackingRealtimeGateway,
+  customerReceiptGateway,
   kitchenProductionCommandGateway,
   managerBlockedOrdersGateway,
   kitchenOrderQueryGateway,
@@ -80,7 +93,8 @@ export function ProtectedShell({
             ordering.
           </p>
         ) : (
-          <CustomerOrderBuilder
+          <>
+            <CustomerOrderBuilder
             catalogGateway={catalogGateway}
             createOrderGateway={
               createOrderGateway
@@ -88,6 +102,15 @@ export function ProtectedShell({
             customerCancellationGateway={customerCancellationGateway}
             businessId={customerBusinessId}
           />
+            <CustomerTrackingBoard
+              key={customerBusinessId}
+              queryGateway={customerTrackingQueryGateway}
+              shortageGateway={customerShortageReasonsGateway}
+              realtimeGateway={customerTrackingRealtimeGateway}
+              receiptGateway={customerReceiptGateway}
+              businessId={customerBusinessId}
+            />
+          </>
         )
       )}
       {role === 'KITCHEN' && (

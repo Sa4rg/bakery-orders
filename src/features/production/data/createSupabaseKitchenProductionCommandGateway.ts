@@ -9,6 +9,8 @@ import {
   KitchenUnavailableQuantityValidationError,
   KitchenMarkReadyCommandError,
   KitchenMarkReadyValidationError,
+  KitchenDispatchCommandError,
+  KitchenDispatchValidationError,
   type KitchenProductionCommandGateway,
 } from '../application/kitchenProductionCommandGateway'
 
@@ -75,6 +77,22 @@ export function createSupabaseKitchenProductionCommandGateway(
         if (error) throw error
       } catch {
         throw new KitchenMarkReadyCommandError()
+      }
+    },
+
+    async dispatchOrder(orderId) {
+      const parsed = orderIdSchema.safeParse(orderId)
+      // Zod accepts the nil UUID as syntactically valid; it is not an Order id.
+      if (!parsed.success || parsed.data === '00000000-0000-0000-0000-000000000000') {
+        throw new KitchenDispatchValidationError()
+      }
+      try {
+        const { error } = await client.rpc('dispatch_order', {
+          p_order_id: parsed.data,
+        })
+        if (error) throw error
+      } catch {
+        throw new KitchenDispatchCommandError()
       }
     },
 

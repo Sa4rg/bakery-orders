@@ -1,3 +1,4 @@
+import { formatQuantityThousandths } from '../../../shared/domain/quantityThousandths'
 import type { KitchenProductionItem } from './kitchenProductionOrder'
 
 export type KitchenQuantityInputResult =
@@ -32,9 +33,7 @@ export function parseKitchenQuantityDelta(
   return { ok: true, thousandths }
 }
 
-/** Display a count of thousandths without floating-point arithmetic. */
+/** Keep the existing Production formatting API while sharing its exact logic. */
 export function formatKitchenQuantity(thousandths: number): string {
-  const whole = Math.floor(thousandths / 1000)
-  const decimal = String(thousandths % 1000).padStart(3, '0').replace(/0+$/, '')
-  return decimal ? `${whole}.${decimal}` : String(whole)
+  return formatQuantityThousandths(thousandths)
 }

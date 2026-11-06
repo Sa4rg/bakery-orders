@@ -25,6 +25,14 @@ import type { KitchenProductionCommandGateway } from '../features/production/app
 import { createSupabaseKitchenProductionCommandGateway } from '../features/production/data/createSupabaseKitchenProductionCommandGateway'
 import type { ManagerBlockedOrdersGateway } from '../features/production/application/managerBlockedOrdersGateway'
 import { createSupabaseManagerBlockedOrdersGateway } from '../features/production/data/createSupabaseManagerBlockedOrdersGateway'
+import type { CustomerTrackingQueryGateway } from '../features/tracking/application/customerTrackingQueryGateway'
+import { createSupabaseCustomerTrackingQueryGateway } from '../features/tracking/data/createSupabaseCustomerTrackingQueryGateway'
+import type { CustomerShortageReasonsGateway } from '../features/tracking/application/customerShortageReasonsGateway'
+import { createSupabaseCustomerShortageReasonsGateway } from '../features/tracking/data/createSupabaseCustomerShortageReasonsGateway'
+import type { CustomerTrackingRealtimeGateway } from '../features/tracking/application/customerTrackingRealtimeGateway'
+import { createSupabaseCustomerTrackingRealtimeGateway } from '../features/tracking/data/createSupabaseCustomerTrackingRealtimeGateway'
+import type { CustomerReceiptGateway } from '../features/tracking/application/customerReceiptGateway'
+import { createSupabaseCustomerReceiptGateway } from '../features/tracking/data/createSupabaseCustomerReceiptGateway'
 
 export type AppBootstrap =
   | {
@@ -35,6 +43,10 @@ export type AppBootstrap =
       managerCatalogGateway: ManagerCatalogGateway
       createOrderGateway: CreateOrderGateway
       customerCancellationGateway: CustomerCancellationGateway
+      customerTrackingQueryGateway: CustomerTrackingQueryGateway
+      customerShortageReasonsGateway: CustomerShortageReasonsGateway
+      customerTrackingRealtimeGateway: CustomerTrackingRealtimeGateway
+      customerReceiptGateway: CustomerReceiptGateway
       kitchenOrderQueryGateway: KitchenOrderQueryGateway
       kitchenProductionCommandGateway: KitchenProductionCommandGateway
       managerBlockedOrdersGateway: ManagerBlockedOrdersGateway
@@ -65,6 +77,10 @@ export function createAppBootstrap(env: Record<string, unknown>): AppBootstrap {
     managerCatalogGateway: createSupabaseManagerCatalogGateway(client),
     createOrderGateway: createSupabaseCreateOrderGateway(client),
     customerCancellationGateway: createSupabaseCustomerCancellationGateway(client),
+    customerTrackingQueryGateway: createSupabaseCustomerTrackingQueryGateway(client),
+    customerShortageReasonsGateway: createSupabaseCustomerShortageReasonsGateway(client),
+    customerTrackingRealtimeGateway: createSupabaseCustomerTrackingRealtimeGateway(client),
+    customerReceiptGateway: createSupabaseCustomerReceiptGateway(client),
     kitchenOrderQueryGateway,
     kitchenProductionCommandGateway: createSupabaseKitchenProductionCommandGateway(client),
     managerBlockedOrdersGateway: createSupabaseManagerBlockedOrdersGateway(client),
